@@ -1,0 +1,57 @@
+# Local environment files (keep sanitized templates)
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Python environments and caches
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+
+# Frontend dependencies, builds, and caches
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/*.tsbuildinfo
+
+# Local media and database data/backups
+**/uploads/
+**/backups/
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite3
+**/*.bak
+**/*.backup
+**/*.dump
+**/*.sql.gz
+
+# Private keys and certificates
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.crt
+**/*.cer
+**/*.jks
+**/*.keystore
+**/id_rsa
+**/id_ed25519
+**/id_ecdsa
+**/id_dsa
+
+# Temporary files and logs
+**/*.log
+**/*.tmp
+**/*.swp
+**/*.swo
+**/*~
+**/.DS_Store
+**/Thumbs.db

@@ -1,0 +1,39 @@
+from alembic import context
+from sqlalchemy import create_engine, pool
+
+from app.config import settings
+from app.database import Base
+from app import models  # noqa: F401 - register all model metadata
+
+config = context.config
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+target_metadata = Base.metadata
+
+
+def run_migrations_offline():
+    context.configure(
+        url=settings.database_url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online():
+    # Use the validated Settings URL directly. Reading the whole INI section
+    # through ConfigParser can fail when the workspace path contains a literal
+    # percent-encoded segment such as "%20".
+    connectable = create_engine(settings.database_url, poolclass=pool.NullPool)
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()

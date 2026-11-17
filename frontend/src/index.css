@@ -1,0 +1,358 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, Arial, sans-serif;
+  color: #eeeae2;
+  background: #090a0c;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+section[id] {
+  scroll-margin-top: 5rem;
+}
+
+.nav-link {
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: #176bff;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms ease;
+}
+
+.nav-link:hover::after,
+.nav-link.text-white::after {
+  transform: scaleX(1);
+}
+
+.booking-button {
+  transition: color 220ms ease, background-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.booking-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 35px rgb(23 107 255 / 25%);
+}
+
+.hero-headline {
+  font-family: "Arial Black", Inter, Arial, sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -.07em;
+  transform: skewX(-7deg) scaleX(.97);
+  transform-origin: center;
+}
+
+.section-heading span { color: #176bff; }
+
+.section-kicker {
+  color: #7eaeff;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .28em;
+}
+
+.section-heading {
+  font-size: clamp(2.7rem, 5.4vw, 5rem);
+  font-weight: 900;
+  line-height: .86;
+  letter-spacing: -.08em;
+}
+
+.service-motion-section {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(72px, 10vw, 136px) 0 28px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: radial-gradient(ellipse at 50% 40%, rgb(23 107 255 / 7%), transparent 55%), #0c0d10;
+}
+
+.service-motion-heading {
+  width: min(960px, calc(100% - 48px));
+  margin: 0 auto clamp(42px, 7vw, 82px);
+}
+
+.service-motion-heading h2 {
+  margin-top: 18px;
+  font-size: clamp(2.6rem, 5.4vw, 5rem);
+  font-weight: 850;
+  line-height: .9;
+  letter-spacing: -.08em;
+}
+
+.infinite-corridor {
+  position: absolute;
+  inset: -8% -8%;
+  overflow: hidden;
+  perspective: 1250px;
+  perspective-origin: 50% 48%;
+  background: #050608;
+  pointer-events: none;
+}
+
+.infinite-corridor__space {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: corridor-flow 22.8s linear infinite;
+  will-change: transform;
+}
+
+.infinite-corridor__panel {
+  position: absolute;
+  top: 50%;
+  width: clamp(170px, 24vw, 350px);
+  height: clamp(110px, 16vw, 230px);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 20%);
+  background: #10131a;
+  box-shadow: 0 12px 50px rgb(0 0 0 / 38%);
+  backface-visibility: hidden;
+}
+
+.infinite-corridor__panel--left {
+  left: 50%;
+  transform: translate3d(calc(-100% - 15vw), -50%, var(--panel-depth)) rotateY(25deg);
+}
+
+.infinite-corridor__panel--right {
+  left: 50%;
+  transform: translate3d(15vw, -50%, var(--panel-depth)) rotateY(-25deg);
+}
+
+.infinite-corridor__panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(.78) contrast(1.08) brightness(.72);
+}
+
+.infinite-corridor__sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgb(23 107 255 / 15%), transparent 55%, rgb(0 0 0 / 24%));
+}
+
+.infinite-corridor__vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(0 0 0 / 14%), transparent 30%, transparent 70%, rgb(0 0 0 / 14%)), radial-gradient(ellipse at center, transparent 3%, rgb(0 0 0 / 16%) 46%, #050608 100%);
+}
+
+@keyframes corridor-flow {
+  from { transform: translateZ(0); }
+  to { transform: translateZ(2280px); }
+}
+
+.infinite-corridor--static .infinite-corridor__panel {
+  filter: brightness(.72);
+}
+
+.infinite-corridor--static .infinite-corridor__space {
+  animation-play-state: paused;
+}
+
+.about-heading {
+  max-width: 700px;
+  font-size: clamp(2.35rem, 5.1vw, 4.8rem);
+  font-weight: 900;
+  line-height: .98;
+  letter-spacing: -.065em;
+}
+
+.about-heading span { color: #176bff; }
+
+.service-motion-heading h2 span { color: #176bff; }
+.service-motion-heading > p:last-child { max-width: 440px; margin-top: 20px; color: rgb(238 234 226 / 55%); font-size: 14px; line-height: 1.7; }
+
+.service-marquee {
+  display: grid;
+  gap: clamp(12px, 2vw, 22px);
+  width: 100%;
+  padding: 4px 0;
+}
+
+.service-marquee__lane {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+
+.service-marquee__track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: service-pills-left var(--marquee-duration, 44s) linear infinite paused;
+}
+
+.service-marquee__lane--right .service-marquee__track { animation-name: service-pills-right; }
+.service-marquee.is-running .service-marquee__track { animation-play-state: running; }
+.service-marquee:hover .service-marquee__track { animation-play-state: paused; }
+
+.service-marquee__set {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 18px);
+  padding-right: clamp(10px, 1.5vw, 18px);
+}
+
+.service-pill {
+  display: inline-flex;
+  min-height: clamp(48px, 6.4vw, 76px);
+  flex: none;
+  align-items: center;
+  padding: 0 clamp(18px, 3vw, 38px);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 2%);
+  color: rgb(238 234 226 / 82%);
+  font-size: clamp(14px, 2.2vw, 23px);
+  font-weight: 500;
+  letter-spacing: -.025em;
+  white-space: nowrap;
+  transition: color .25s ease, border-color .25s ease, background-color .25s ease, transform .25s ease;
+}
+
+.service-pill:hover {
+  transform: translateY(-3px);
+  border-color: rgb(23 107 255 / 70%);
+  background: rgb(23 107 255 / 12%);
+  color: #fff;
+}
+
+.service-pill--accent { border-color: rgb(23 107 255 / 55%); background: rgb(23 107 255 / 10%); color: #fff; }
+
+.service-motion-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(960px, calc(100% - 48px));
+  margin: clamp(42px, 7vw, 78px) auto 0;
+  color: rgb(255 255 255 / 32%);
+  font-size: 8px;
+  letter-spacing: .22em;
+}
+
+@keyframes service-pills-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes service-pills-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+@media (max-width: 640px) {
+  .service-motion-heading, .service-motion-foot { width: calc(100% - 36px); }
+  .service-pill { min-height: 46px; padding-inline: 17px; }
+  .service-motion-foot { flex-direction: column; gap: 8px; }
+  .infinite-corridor { inset: -8% -54%; perspective: 820px; }
+  .infinite-corridor__space { animation-duration: 25s; }
+  .infinite-corridor__panel { width: clamp(145px, 43vw, 230px); height: clamp(96px, 28vw, 150px); }
+  .infinite-corridor__panel--left { transform: translate3d(calc(-100% - 10vw), -50%, var(--panel-depth)) rotateY(20deg); }
+  .infinite-corridor__panel--right { transform: translate3d(10vw, -50%, var(--panel-depth)) rotateY(-20deg); }
+  .about-section { padding-block: 72px; }
+  .about-heading { font-size: clamp(2.25rem, 10vw, 3.7rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-marquee__track { animation: none !important; transform: translateX(0) !important; }
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: #176BFF;
+  color: white;
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+[data-spotlight]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 50%),
+    hsl(var(--glow, 215) 90% 65% / .16),
+    transparent 65%
+  );
+}
+
+[data-spotlight]:hover::before {
+  opacity: 1;
+}
+
+.pw-project-rail {
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pw-project-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.pw-project-rail > button {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+
+  .pw-project-rail {
+    scroll-behavior: auto !important;
+  }
+
+}
