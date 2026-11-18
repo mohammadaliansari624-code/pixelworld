@@ -69,6 +69,8 @@ class Review(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     customer_name: Mapped[str] = mapped_column(String(120), nullable=False)
     profile_image_url: Mapped[str] = mapped_column(String(1000), default="", nullable=False)
+    google_sub: Mapped[str] = mapped_column(String(255), default="", index=True, nullable=False)
+    customer_email: Mapped[str] = mapped_column(String(255), default="", nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     review_text: Mapped[str] = mapped_column(Text, nullable=False)
     project_name: Mapped[str] = mapped_column(String(180), default="", nullable=False)

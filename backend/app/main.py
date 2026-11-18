@@ -128,6 +128,13 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/public-config")
+def public_config():
+    # OAuth client IDs are public identifiers, not secrets.
+    return {"google_client_id": settings.google_client_id}
+
+
+
 # --------------------------------------------------
 # AUTHENTICATION
 # --------------------------------------------------
@@ -263,44 +270,43 @@ def public_reviews(db: Session = Depends(get_db)):
     return [_review_payload(row) for row in rows]
 
 @app.post("/api/reviews", status_code=201)
-async def submit_review(
-    customer_name: str = File(...),
-    rating: int = File(...),
-    review_text: str = File(...),
-    project_name: str = File(default=""),
-    profile_image: UploadFile | None = File(default=None),
-    db: Session = Depends(get_db),
-):
-    """Public submissions are always pending; only approved reviews are public."""
-    name = customer_name.strip()
-    text = review_text.strip()
-    project = project_name.strip()
-    if len(name) < 2 or len(name) > 120:
-        raise HTTPException(status_code=422, detail="Name must be between 2 and 120 characters")
-    if rating < 1 or rating > 5:
-        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+def submit_review(data: schemas.GoogleReviewInput, db: Session = Depends(get_db)):
+    """Accept a review only after verifying the customer's Google ID token."""
+    if not settings.google_client_id:
+        raise HTTPException(status_code=503, detail="Google Sign-In is not configured yet")
+    try:
+        identity = id_token.verify_oauth2_token(
+            data.credential, google_requests.Request(), settings.google_client_id
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="Google credential is invalid or expired")
+
+    email = str(identity.get("email", "")).strip().lower()
+    google_sub = str(identity.get("sub", "")).strip()
+    name = str(identity.get("name", "")).strip()
+    picture = str(identity.get("picture", "")).strip()
+    if identity.get("email_verified") is not True or not email or not google_sub or not name:
+        raise HTTPException(status_code=401, detail="A verified Google account is required")
+    if picture and (not picture.startswith("https://") or len(picture) > 1000):
+        picture = ""
+
+    project = data.project_name.strip()
+    text = data.review_text.strip()
     if len(text) < 10 or len(text) > 2000:
         raise HTTPException(status_code=422, detail="Review must be between 10 and 2000 characters")
     if len(project) > 180:
         raise HTTPException(status_code=422, detail="Project name is too long")
 
-    image_url = ""
-    if profile_image and profile_image.filename:
-        content_type = (profile_image.content_type or "").lower()
-        image_type = IMAGE_TYPES.get(content_type)
-        if not image_type:
-            raise HTTPException(status_code=415, detail="Only JPG, PNG, WEBP and GIF images are allowed")
-        content = await profile_image.read(MAX_IMAGE_SIZE + 1)
-        if not content or len(content) > MAX_IMAGE_SIZE:
-            raise HTTPException(status_code=413 if len(content) > MAX_IMAGE_SIZE else 400, detail="Profile image must be non-empty and 8 MB or smaller")
-        extension, signature_check = image_type
-        if not signature_check(content):
-            raise HTTPException(status_code=415, detail="The file contents do not match the image type")
-        filename = f"review-{uuid4().hex}{extension}"
-        (UPLOAD_DIR / filename).write_bytes(content)
-        image_url = f"/uploads/{filename}"
-
-    row = models.Review(customer_name=name, profile_image_url=image_url, rating=rating, review_text=text, project_name=project, status="pending")
+    row = models.Review(
+        customer_name=name[:120],
+        profile_image_url=picture,
+        google_sub=google_sub,
+        customer_email=email,
+        rating=data.rating,
+        review_text=text,
+        project_name=project,
+        status="pending",
+    )
     db.add(row)
     db.commit()
     db.refresh(row)

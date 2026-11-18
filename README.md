@@ -132,3 +132,14 @@ This adds the `reviews` table (migration `20261118_0004`). It does not modify ex
 Review profile images currently use the app's existing local `uploads/` directory. Render Free filesystems are ephemeral, so uploaded profile images can disappear after a restart/redeploy. For durable customer images, configure persistent object storage (Cloudinary, S3, or equivalent) and change the upload implementation to store there, or use a supported persistent disk. The review text and moderation status remain in PostgreSQL.
 
 Public review submission is moderated but does not yet include CAPTCHA or a durable distributed rate limiter. Before promoting the form widely, add anti-spam protection.
+
+
+## Customer review Google sign-in
+
+Public review submission now requires Google Identity Services. Configure both:
+- `GOOGLE_CLIENT_ID` on the FastAPI service (server-side ID-token verification).
+- `VITE_GOOGLE_CLIENT_ID` as a Docker **build argument** for the Vite frontend bundle (same Web OAuth Client ID).
+
+The OAuth client must list the deployed website origin under Authorized JavaScript origins. The backend verifies the Google ID token, verified email, and subject before saving the review. The customer's Google name and profile picture are taken from the verified token; no manual image upload is offered in the public form. Reviews remain pending until approved by an admin.
+
+Because Vite variables are compiled at image build time, changing `VITE_GOOGLE_CLIENT_ID` in Render runtime environment variables alone is insufficient unless the Dockerfile passes it into the frontend build stage.

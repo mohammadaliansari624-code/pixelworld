@@ -8,6 +8,18 @@ import { DEFAULT_BOOKING_MESSAGE, whatsappUrl } from './lib/whatsapp';
 import { extractYoutubeVideoId, fetchYoutubeThumbnail, isYoutubeUrl } from './lib/youtube-thumbnail';
 
 const API = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: { client_id: string; callback: (response: { credential: string }) => void }) => void;
+          renderButton: (element: HTMLElement, options: Record<string, unknown>) => void;
+        };
+      };
+    };
+  }
+}
 type Project = { id: number; title: string; category: string; description: string; video_url: string; thumbnail_url: string; featured: boolean; sort_order: number };
 type Member = { id: number; name: string; role: string; bio: string; photo_url: string; social_url: string; sort_order: number };
 type Review = { id: number; customer_name: string; profile_image_url: string; rating: number; review_text: string; project_name: string; status: 'pending' | 'approved' | 'rejected' | 'hidden'; created_at?: string | null };
@@ -66,6 +78,38 @@ function App() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const [modal, setModal] = useState<Project | null>(null); const [booking, setBooking] = useState(false); const [menu, setMenu] = useState(false); const [active, setActive] = useState('work');
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
+    const renderGoogleButton = () => {
+      if (!window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          try {
+            const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+            setGoogleCredential(response.credential);
+            setGoogleProfile({ name: String(payload.name || ''), picture: String(payload.picture || '') });
+            setReviewMessage('');
+          } catch {
+            setReviewMessage('Google sign-in could not be verified. Please try again.');
+          }
+        },
+      });
+      googleButtonRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleButtonRef.current, { theme: 'filled_black', size: 'large', shape: 'rectangular', text: 'signin_with', width: 280 });
+    };
+    if (window.google) { renderGoogleButton(); return; }
+    const existing = document.querySelector<HTMLScriptElement>('script[data-google-identity]');
+    if (existing) { existing.addEventListener('load', renderGoogleButton); return () => existing.removeEventListener('load', renderGoogleButton); }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleIdentity = 'true';
+    script.onload = renderGoogleButton;
+    document.head.appendChild(script);
+    return () => { script.onload = null; };
+  }, []);
   useEffect(() => { request('/api/public').then((result) => setData({ ...result, settings: { ...emptySite, ...result.settings } })).catch(() => {}); request('/api/reviews').then(setReviews).catch(() => {}); }, []);
   useEffect(() => { const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) setActive(entry.target.id); }), { rootMargin: '-35% 0px -55% 0px' }); document.querySelectorAll('main section[id]').forEach((section) => observer.observe(section)); return () => observer.disconnect(); }, []);
   const categories = Array.from(new Set(data.projects.map(p => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
@@ -92,11 +136,10 @@ function App() {
       <section id="team" className="scroll-mt-24 px-6 py-24 md:px-14"><div className="mx-auto max-w-7xl"><Reveal><div className="mb-12"><p className="section-kicker mb-5">THE PEOPLE / 03</p><h2 className="section-heading">GOOD WORK<br/>TAKES <span>PEOPLE.</span></h2></div></Reveal><div className="grid grid-cols-2 gap-5 md:grid-cols-3">{data.team.map((m, i) => <Reveal key={m.id} delay={i * .08}><motion.div whileHover={{ y: -6 }} className="group"><div className="aspect-[3/4] overflow-hidden bg-[#17191e]"><img src={m.photo_url} alt={m.name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0"/></div><h3 className="mt-4 text-lg font-bold">{m.name}</h3><p className="mt-2 text-[10px] tracking-widest text-white/45">{m.role}</p><p className="mt-2 text-xs text-white/55">{m.bio}</p>{m.social_url && <a href={m.social_url} target="_blank" rel="noreferrer" aria-label={`${m.name} social profile`} className="mt-3 inline-block text-white/60 transition hover:-translate-y-1 hover:text-[#7EAEFF]"><Instagram size={16}/></a>}</motion.div></Reveal>)}</div>{data.team.length === 0 && <p className="text-sm text-white/45">Meet the people behind the work soon.</p>}</div></section>
       <section id="reviews" className="scroll-mt-24 border-y border-white/10 bg-[#101115] px-6 py-20 md:px-14"><div className="mx-auto max-w-7xl"><Reveal><div className="mb-10 flex flex-wrap items-end justify-between gap-5"><div><p className="section-kicker mb-5">CLIENT WORDS / 04</p><h2 className="section-heading">GOOD WORK.<br/><span>GOOD WORDS.</span></h2></div><p className="max-w-sm text-sm leading-6 text-white/50">Have we worked together? Share your experience with Pixel Wrld.</p></div></Reveal>
         {reviews.length > 0 ? <div className="mb-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{reviews.map(review => <article key={review.id} className="border border-white/10 bg-black/20 p-5"><div className="mb-4 flex items-center gap-3">{review.profile_image_url ? <img src={review.profile_image_url} alt={review.customer_name} className="h-11 w-11 rounded-full object-cover"/> : <div className="grid h-11 w-11 place-items-center rounded-full bg-[#176BFF]/20 text-sm font-bold text-[#7EAEFF]">{review.customer_name.slice(0,1).toUpperCase()}</div>}<div className="min-w-0"><h3 className="truncate text-sm font-semibold">{review.customer_name}</h3>{review.project_name && <p className="truncate text-[10px] text-white/40">{review.project_name}</p>}</div></div><p className="mb-3 tracking-widest text-[#7EAEFF]" aria-label={`${review.rating} out of 5 stars`}>{'★'.repeat(review.rating)}<span className="text-white/20">{'★'.repeat(5-review.rating)}</span></p><p className="text-sm leading-6 text-white/65">“{review.review_text}”</p></article>)}</div> : <p className="mb-10 border border-white/10 p-6 text-sm text-white/45">Customer reviews will appear here after they are approved.</p>}
-        <div className="max-w-3xl border border-white/10 bg-black/20 p-5 md:p-7"><h3 className="text-xl font-bold">Share your experience</h3><p className="mt-2 text-xs leading-5 text-white/45">Your review will be published after our team approves it. Profile photo is optional.</p><form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={async e => { e.preventDefault(); setReviewSubmitting(true); setReviewMessage(''); try { const form = new FormData(); form.append('customer_name', reviewForm.customer_name); form.append('rating', String(reviewForm.rating)); form.append('review_text', reviewForm.review_text); form.append('project_name', reviewForm.project_name); if (reviewImage) form.append('profile_image', reviewImage); const response = await fetch(`${API}/api/reviews`, { method: 'POST', body: form }); const result = await response.json().catch(() => ({})); if (!response.ok) throw new Error(result.detail || 'Could not submit your review'); setReviewMessage(result.message || 'Thanks! Your review is awaiting approval.'); setReviewForm({ customer_name: '', rating: 5, review_text: '', project_name: '' }); setReviewImage(null); } catch (err) { setReviewMessage(err instanceof Error ? err.message : 'Could not submit your review'); } finally { setReviewSubmitting(false); } }}>
-          <label className="text-xs">Your name<input required minLength={2} maxLength={120} value={reviewForm.customer_name} onChange={e => setReviewForm({ ...reviewForm, customer_name: e.target.value })} className="mt-2 w-full border border-white/15 bg-white/5 p-3 text-sm outline-none focus:border-[#176BFF]"/></label>
+        <div className="max-w-3xl border border-white/10 bg-black/20 p-5 md:p-7"><h3 className="text-xl font-bold">Share your experience</h3><p className="mt-2 text-xs leading-5 text-white/45">Sign in with Google. Your Google name and profile photo will be used automatically. Reviews appear after admin approval.</p><form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={async e => { e.preventDefault(); if (!googleCredential) { setReviewMessage('Please sign in with Google before submitting a review.'); return; } setReviewSubmitting(true); setReviewMessage(''); try { const response = await fetch(`${API}/api/reviews`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: googleCredential, rating: reviewForm.rating, review_text: reviewForm.review_text, project_name: reviewForm.project_name }) }); const result = await response.json().catch(() => ({})); if (!response.ok) throw new Error(result.detail || 'Could not submit your review'); setReviewMessage(result.message || 'Thanks! Your review is awaiting approval.'); setReviewForm({ customer_name: '', rating: 5, review_text: '', project_name: '' }); setGoogleCredential(''); setGoogleProfile(null); if (googleButtonRef.current) googleButtonRef.current.innerHTML = ''; } catch (err) { setReviewMessage(err instanceof Error ? err.message : 'Could not submit your review'); } finally { setReviewSubmitting(false); } }}>
+          <div className="sm:col-span-2"><p className="mb-2 text-xs">Google account</p>{googleProfile ? <div className="flex items-center gap-3 border border-white/10 bg-white/5 p-3">{googleProfile.picture && <img src={googleProfile.picture} alt="" referrerPolicy="no-referrer" className="h-10 w-10 rounded-full object-cover"/>}<div className="min-w-0 flex-1"><p className="text-sm font-semibold">{googleProfile.name}</p><p className="text-[10px] text-emerald-300">Google account verified by server on submission</p></div><button type="button" onClick={() => { setGoogleCredential(''); setGoogleProfile(null); if (googleButtonRef.current) googleButtonRef.current.innerHTML = ''; }} className="text-xs text-white/60 underline">Change</button></div> : <div ref={googleButtonRef} className="min-h-10"/>}{!googleClientId && <p className="mt-2 text-xs text-amber-300">Google review sign-in is not configured. Configure GOOGLE_CLIENT_ID in the backend environment.</p>}</div>
           <label className="text-xs">Project / service (optional)<input maxLength={180} value={reviewForm.project_name} onChange={e => setReviewForm({ ...reviewForm, project_name: e.target.value })} className="mt-2 w-full border border-white/15 bg-white/5 p-3 text-sm outline-none focus:border-[#176BFF]" placeholder="e.g. Instagram Reels editing"/></label>
           <label className="text-xs">Rating<select value={reviewForm.rating} onChange={e => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })} className="mt-2 w-full border border-white/15 bg-[#151515] p-3 text-sm text-white">{[5,4,3,2,1].map(value => <option key={value} value={value}>{value} / 5 stars</option>)}</select></label>
-          <label className="text-xs">Profile photo (optional)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => setReviewImage(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-white/60 file:mr-3 file:border-0 file:bg-[#176BFF] file:px-3 file:py-2 file:text-white"/></label>
           <label className="text-xs sm:col-span-2">Your review<textarea required minLength={10} maxLength={2000} rows={4} value={reviewForm.review_text} onChange={e => setReviewForm({ ...reviewForm, review_text: e.target.value })} className="mt-2 w-full border border-white/15 bg-white/5 p-3 text-sm outline-none focus:border-[#176BFF]" placeholder="Tell us about your experience…"/></label>
           {reviewMessage && <p role="status" className="text-xs text-[#7EAEFF] sm:col-span-2">{reviewMessage}</p>}
           <button disabled={reviewSubmitting} className="bg-[#176BFF] px-6 py-3 text-xs font-bold tracking-widest disabled:opacity-50 sm:col-span-2">{reviewSubmitting ? 'SUBMITTING…' : 'SUBMIT REVIEW →'}</button>

@@ -120,3 +120,10 @@ class ReviewInput(BaseModel):
 class ReviewOut(ReviewInput):
     id: int
     created_at: str | None = None
+
+
+class GoogleReviewInput(BaseModel):
+    credential: str = Field(min_length=20, max_length=10000)
+    rating: int = Field(ge=1, le=5)
+    review_text: str = Field(min_length=10, max_length=2000)
+    project_name: str = Field(default="", max_length=180)
