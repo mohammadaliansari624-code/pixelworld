@@ -64,11 +64,17 @@ function App() {
   useEffect(() => { const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) setActive(entry.target.id); }), { rootMargin: '-35% 0px -55% 0px' }); document.querySelectorAll('main section[id]').forEach((section) => observer.observe(section)); return () => observer.disconnect(); }, []);
   const categories = Array.from(new Set(data.projects.map(p => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   const nav = [['work', 'WORK'], ['studio', 'STUDIO'], ['team', 'PEOPLE'], ['contact', 'CONTACT']];
-  const closeMenu = () => setMenu(false);
+  const navigateToSection = (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    event.preventDefault();
+    setMenu(false);
+    history.pushState(null, '', `#${id}`);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActive(id);
+  };
   const bookingLink = whatsappUrl(data.settings.whatsapp_number, 'Hello Pixel Wrld, I am interested in your video editing services. Please share the details.');
   return <div className="min-h-screen overflow-x-hidden bg-[#090a0c] text-[#eeeae2]">
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-[#090a0c]/90 px-5 py-5 backdrop-blur-xl md:px-10"><a href="#top" className="flex items-center"><img src="/assets/PW%20LOGO(1).png" alt="Pixel Wrld" className="h-9 w-auto object-contain md:h-11"/></a><nav className="hidden gap-8 text-[10px] tracking-[2px] text-white/65 md:flex">{nav.map(([id, label]) => <a key={id} href={`#${id}`} className={`nav-link py-2 transition-colors hover:text-white ${active === id ? 'text-white' : ''}`}>{label}</a>)}</nav><div className="flex items-center gap-4"><button onClick={() => setBooking(true)} className="bg-[#176BFF] px-4 py-3 text-[10px] font-bold tracking-wider hover:bg-white hover:text-black">BOOK A CALL →</button><button className="md:hidden" onClick={() => setMenu(!menu)}>{menu ? <X/> : <Menu/>}</button></div>
-      <AnimatePresence>{menu && <motion.nav initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .25 }} className="absolute left-0 top-full flex w-full flex-col gap-1 overflow-hidden border-b border-white/10 bg-[#111]/95 p-3 text-xs backdrop-blur-xl md:hidden">{nav.map(([id, label]) => <a key={id} href={`#${id}`} onClick={closeMenu} className="px-4 py-4 tracking-widest hover:bg-white/5">{label}</a>)}</motion.nav>}</AnimatePresence>
+      <AnimatePresence>{menu && <motion.nav initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .25 }} className="absolute left-0 top-full z-50 flex w-full flex-col gap-1 overflow-hidden border-b border-white/10 bg-[#111]/95 p-3 text-xs backdrop-blur-xl md:hidden">{nav.map(([id, label]) => <a key={id} href={`#${id}`} onClick={event => navigateToSection(event, id)} className="px-4 py-4 tracking-widest hover:bg-white/5">{label}</a>)}</motion.nav>}</AnimatePresence>
     </header>
     <main>
       <section id="top" className="hero relative flex min-h-[600px] items-center justify-center overflow-hidden bg-black px-6 py-24 text-center md:min-h-[720px]"><InfiniteCorridor/><div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/55 to-black/70"/><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: .9, ease: [0.22, 1, .36, 1] }} className="relative z-10 mx-auto max-w-3xl"><div className="mx-auto aspect-[5.67/1] w-[min(620px,90vw)] overflow-hidden"><img src="/assets/PIXEL%20WRLD%20FOR%20BACK.png" alt="Pixel Wrld — The world behind great content" className="h-full w-full object-cover object-center"/></div></motion.div></section>
