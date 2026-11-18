@@ -8,18 +8,6 @@ import { DEFAULT_BOOKING_MESSAGE, whatsappUrl } from './lib/whatsapp';
 import { extractYoutubeVideoId, fetchYoutubeThumbnail, isYoutubeUrl } from './lib/youtube-thumbnail';
 
 const API = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (options: { client_id: string; callback: (response: { credential: string }) => void }) => void;
-          renderButton: (element: HTMLElement, options: Record<string, unknown>) => void;
-        };
-      };
-    };
-  }
-}
 type Project = { id: number; title: string; category: string; description: string; video_url: string; thumbnail_url: string; featured: boolean; sort_order: number };
 type Member = { id: number; name: string; role: string; bio: string; photo_url: string; social_url: string; sort_order: number };
 type Review = { id: number; customer_name: string; profile_image_url: string; rating: number; review_text: string; project_name: string; status: 'pending' | 'approved' | 'rejected' | 'hidden'; created_at?: string | null };
@@ -71,6 +59,10 @@ function ProjectRail({ category, projects, onSelect }: { category: string; proje
 }
 
 function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [googleCredential, setGoogleCredential] = useState('');
+  const [googleProfile, setGoogleProfile] = useState<{ name: string; picture: string } | null>(null);
   const [data, setData] = useState<{ projects: Project[]; team: Member[]; settings: Site }>({ projects: sampleProjects, team: sampleTeam, settings: emptySite });
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, review_text: '', project_name: '' });
@@ -78,7 +70,7 @@ function App() {
   const [reviewMessage, setReviewMessage] = useState('');
   const [modal, setModal] = useState<Project | null>(null); const [booking, setBooking] = useState(false); const [menu, setMenu] = useState(false); const [active, setActive] = useState('work');
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !googleButtonRef.current) return;
+    if (!googleClientId || !googleButtonRef.current) return;
     const renderGoogleButton = () => {
       if (!window.google || !googleButtonRef.current) return;
       window.google.accounts.id.initialize({
@@ -108,7 +100,7 @@ function App() {
     script.onload = renderGoogleButton;
     document.head.appendChild(script);
     return () => { script.onload = null; };
-  }, []);
+  }, [googleClientId]);
   useEffect(() => { request('/api/public').then((result) => setData({ ...result, settings: { ...emptySite, ...result.settings } })).catch(() => {}); request('/api/reviews').then(setReviews).catch(() => {}); }, []);
   useEffect(() => { const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) setActive(entry.target.id); }), { rootMargin: '-35% 0px -55% 0px' }); document.querySelectorAll('main section[id]').forEach((section) => observer.observe(section)); return () => observer.disconnect(); }, []);
   const categories = Array.from(new Set(data.projects.map(p => p.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
