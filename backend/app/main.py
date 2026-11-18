@@ -106,6 +106,7 @@ def _cleanup_uploaded_image_if_unused(db: Session, image_url: str):
     references = [
         *db.query(models.Project.thumbnail_url).all(),
         *db.query(models.TeamMember.photo_url).all(),
+        *db.query(models.Review.profile_image_url).all(),
     ]
     for (reference,) in references:
         if reference and urlsplit(reference).path == image_path:
@@ -244,6 +245,69 @@ def public_data(db: Session = Depends(get_db)):
 
 
 # --------------------------------------------------
+# CUSTOMER REVIEWS (public submission, moderated publication)
+# --------------------------------------------------
+
+def _review_payload(row: models.Review):
+    return {
+        "id": row.id, "customer_name": row.customer_name,
+        "profile_image_url": row.profile_image_url, "rating": row.rating,
+        "review_text": row.review_text, "project_name": row.project_name,
+        "status": row.status, "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+@app.get("/api/reviews")
+def public_reviews(db: Session = Depends(get_db)):
+    rows = (db.query(models.Review).filter(models.Review.status == "approved")
+            .order_by(models.Review.created_at.desc()).limit(50).all())
+    return [_review_payload(row) for row in rows]
+
+@app.post("/api/reviews", status_code=201)
+async def submit_review(
+    customer_name: str = File(...),
+    rating: int = File(...),
+    review_text: str = File(...),
+    project_name: str = File(default=""),
+    profile_image: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+):
+    """Public submissions are always pending; only approved reviews are public."""
+    name = customer_name.strip()
+    text = review_text.strip()
+    project = project_name.strip()
+    if len(name) < 2 or len(name) > 120:
+        raise HTTPException(status_code=422, detail="Name must be between 2 and 120 characters")
+    if rating < 1 or rating > 5:
+        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+    if len(text) < 10 or len(text) > 2000:
+        raise HTTPException(status_code=422, detail="Review must be between 10 and 2000 characters")
+    if len(project) > 180:
+        raise HTTPException(status_code=422, detail="Project name is too long")
+
+    image_url = ""
+    if profile_image and profile_image.filename:
+        content_type = (profile_image.content_type or "").lower()
+        image_type = IMAGE_TYPES.get(content_type)
+        if not image_type:
+            raise HTTPException(status_code=415, detail="Only JPG, PNG, WEBP and GIF images are allowed")
+        content = await profile_image.read(MAX_IMAGE_SIZE + 1)
+        if not content or len(content) > MAX_IMAGE_SIZE:
+            raise HTTPException(status_code=413 if len(content) > MAX_IMAGE_SIZE else 400, detail="Profile image must be non-empty and 8 MB or smaller")
+        extension, signature_check = image_type
+        if not signature_check(content):
+            raise HTTPException(status_code=415, detail="The file contents do not match the image type")
+        filename = f"review-{uuid4().hex}{extension}"
+        (UPLOAD_DIR / filename).write_bytes(content)
+        image_url = f"/uploads/{filename}"
+
+    row = models.Review(customer_name=name, profile_image_url=image_url, rating=rating, review_text=text, project_name=project, status="pending")
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "status": "pending", "message": "Thank you! Your review has been submitted and will appear after approval."}
+
+
+# --------------------------------------------------
 # IMAGE UPLOAD
 # --------------------------------------------------
 
@@ -376,6 +440,56 @@ def revoke_admin_access(admin_id: int, db: Session = Depends(get_db), owner: mod
     return {"ok": True, "email": admin.email}
 
 # --------------------------------------------------
+# ADMIN REVIEW MODERATION
+# --------------------------------------------------
+
+@app.get("/api/admin/reviews")
+def admin_reviews(db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    rows = db.query(models.Review).order_by(models.Review.created_at.desc()).all()
+    return [_review_payload(row) for row in rows]
+
+@app.post("/api/admin/reviews")
+def admin_create_review(data: schemas.ReviewInput, db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    row = models.Review(**data.model_dump())
+    db.add(row); db.commit(); db.refresh(row)
+    return _review_payload(row)
+
+@app.put("/api/admin/reviews/{review_id}")
+def admin_update_review(review_id: int, data: schemas.ReviewInput, db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    row = db.get(models.Review, review_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Review not found")
+    old_image = row.profile_image_url
+    for key, value in data.model_dump().items():
+        setattr(row, key, value)
+    db.commit(); db.refresh(row)
+    if old_image != row.profile_image_url:
+        _cleanup_uploaded_image_if_unused(db, old_image)
+    return _review_payload(row)
+
+@app.post("/api/admin/reviews/{review_id}/status")
+def admin_review_status(review_id: int, status: str, db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    if status not in {"pending", "approved", "rejected", "hidden"}:
+        raise HTTPException(status_code=422, detail="Invalid review status")
+    row = db.get(models.Review, review_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Review not found")
+    row.status = status
+    db.commit()
+    return {"ok": True, "status": status}
+
+@app.delete("/api/admin/reviews/{review_id}")
+def admin_delete_review(review_id: int, db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    row = db.get(models.Review, review_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Review not found")
+    old_image = row.profile_image_url
+    db.delete(row); db.commit()
+    _cleanup_uploaded_image_if_unused(db, old_image)
+    return {"ok": True}
+
+
+# --------------------------------------------------
 # ADMIN DASHBOARD SUMMARY
 # --------------------------------------------------
 
@@ -387,6 +501,8 @@ def summary(
     return {
         "projects": db.query(models.Project).count(),
         "team_members": db.query(models.TeamMember).count(),
+        "reviews": db.query(models.Review).count(),
+        "pending_reviews": db.query(models.Review).filter(models.Review.status == "pending").count(),
     }
 
 

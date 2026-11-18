@@ -62,3 +62,16 @@ class SiteSettings(Base):
     tiktok_url: Mapped[str] = mapped_column(String(1000), default="")
     behance_url: Mapped[str] = mapped_column(String(1000), default="")
     pinterest_url: Mapped[str] = mapped_column(String(1000), default="")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    profile_image_url: Mapped[str] = mapped_column(String(1000), default="", nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_text: Mapped[str] = mapped_column(Text, nullable=False)
+    project_name: Mapped[str] = mapped_column(String(180), default="", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

@@ -108,3 +108,27 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 When `frontend/dist` exists, FastAPI serves the frontend, assets and SPA routes. Leave `VITE_API_URL` unset in the production frontend build so API calls use the same origin. For local development, set `VITE_API_URL=http://localhost:8000`. Use persistent storage for PostgreSQL and uploaded images in production, and schedule database/media backups.
+
+## Customer reviews and moderation
+
+- Visitors can submit a review with their name, 1–5 star rating, review text, optional project/service name, and optional profile image.
+- Public submissions are always saved with `pending` status. They are not returned by the public reviews endpoint until an admin approves them.
+- The public homepage displays approved reviews and includes a submission form.
+- In `/admin`, open **Reviews** to view all submissions, approve/publish, reject, hide/unpublish, edit, delete, or manually add a review.
+- Review images use the existing `/uploads` local media directory and the same JPG/PNG/WEBP/GIF signature checks (8 MiB max).
+
+### Apply the reviews database migration
+
+After deploying the code, run this once from the backend environment against the Pixel Wrld Neon database:
+
+```bash
+alembic upgrade head
+```
+
+This adds the `reviews` table (migration `20261118_0004`). It does not modify existing admin, project, team, or settings rows. Do not run the SQLite-to-PostgreSQL importer again; the existing data has already been migrated.
+
+### Image storage warning for Render Free
+
+Review profile images currently use the app's existing local `uploads/` directory. Render Free filesystems are ephemeral, so uploaded profile images can disappear after a restart/redeploy. For durable customer images, configure persistent object storage (Cloudinary, S3, or equivalent) and change the upload implementation to store there, or use a supported persistent disk. The review text and moderation status remain in PostgreSQL.
+
+Public review submission is moderated but does not yet include CAPTCHA or a durable distributed rate limiter. Before promoting the form widely, add anti-spam protection.

@@ -107,3 +107,16 @@ class AdminAccountOut(BaseModel):
     email: str
     is_active: bool
     is_super_admin: bool
+
+
+class ReviewInput(BaseModel):
+    customer_name: str = Field(min_length=2, max_length=120)
+    profile_image_url: str = Field(default="", max_length=1000)
+    rating: int = Field(ge=1, le=5)
+    review_text: str = Field(min_length=10, max_length=2000)
+    project_name: str = Field(default="", max_length=180)
+    status: str = Field(default="pending", pattern="^(pending|approved|rejected|hidden)$")
+
+class ReviewOut(ReviewInput):
+    id: int
+    created_at: str | None = None
