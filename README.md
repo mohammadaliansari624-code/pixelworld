@@ -5,7 +5,7 @@ A full-stack starter for a premium video-editing studio website.
 ## Stack
 - Frontend: React, Vite, TypeScript, Tailwind CSS, Framer Motion, Motion (`motion/react`)
 - Backend: FastAPI, PostgreSQL 18, SQLAlchemy, psycopg 3, Alembic, JWT authentication
-- Media: local uploads (replace with Cloudinary/S3 for production)
+- Media: local uploads (mount persistent storage at `UPLOAD_DIR` in production)
 
 ## Requirements
 - Node.js 20+
@@ -66,7 +66,7 @@ The public booking form validates the details and opens WhatsApp with a prefille
 - Keep `SUPER_ADMIN_EMAIL` restricted to the owner and rotate `JWT_SECRET` if it is ever exposed.
 - Use HTTPS.
 - Use managed PostgreSQL and Alembic migrations for schema changes.
-- Use Cloudinary/S3 for persistent media; local `uploads/` is not durable on many hosts.
+- Mount persistent storage for uploaded media and set `UPLOAD_DIR` to its absolute path (for example, `/var/data/uploads` on a host with a disk mounted at `/var/data`). The app keeps serving files from `/uploads/...`, so existing database URLs remain compatible.
 - Add rate limiting, email verification, backups and audit logs before public production use.
 - Configure CORS to your real frontend origin.
 
@@ -129,7 +129,7 @@ This adds the `reviews` table (migration `20261118_0004`). It does not modify ex
 
 ### Image storage warning for Render Free
 
-Review profile images currently use the app's existing local `uploads/` directory. Render Free filesystems are ephemeral, so uploaded profile images can disappear after a restart/redeploy. For durable customer images, configure persistent object storage (Cloudinary, S3, or equivalent) and change the upload implementation to store there, or use a supported persistent disk. The review text and moderation status remain in PostgreSQL.
+All uploaded images (team photos, portfolio thumbnails and review profile images) are stored in `UPLOAD_DIR`. The default `backend/uploads` folder is local to the app and can be ephemeral on hosted deployments. Attach a persistent disk to the backend service and set `UPLOAD_DIR` to its absolute mount path, such as `/var/data/uploads` when the disk is mounted at `/var/data`. Keep that volume attached across redeploys and back it up. The public `/uploads/...` URLs and database records stay unchanged, and the same media volume is shared by all devices using the site.
 
 Public review submission is moderated but does not yet include CAPTCHA or a durable distributed rate limiter. Before promoting the form widely, add anti-spam protection.
 
@@ -143,3 +143,7 @@ Public review submission now requires Google Identity Services. Configure both:
 The OAuth client must list the deployed website origin under Authorized JavaScript origins. The backend verifies the Google ID token, verified email, and subject before saving the review. The customer's Google name and profile picture are taken from the verified token; no manual image upload is offered in the public form. Reviews remain pending until approved by an admin.
 
 Because Vite variables are compiled at image build time, changing `VITE_GOOGLE_CLIENT_ID` in Render runtime environment variables alone is insufficient unless the Dockerfile passes it into the frontend build stage.
+
+## Instagram username setting
+
+The Admin **Site settings → Social Media** panel accepts an Instagram username (with or without `@`). After deploying the username migration (`20261125_0006`), run `alembic upgrade head`; existing site settings are preserved. The People section builds the public profile link from that validated username and hides it when the field is empty.

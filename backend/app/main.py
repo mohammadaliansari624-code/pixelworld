@@ -48,8 +48,11 @@ app.add_middleware(
 # UPLOAD CONFIGURATION
 # --------------------------------------------------
 
+configured_upload_dir = Path(settings.upload_dir)
 UPLOAD_DIR = (
-    Path(__file__).resolve().parent.parent / settings.upload_dir
+    configured_upload_dir
+    if configured_upload_dir.is_absolute()
+    else Path(__file__).resolve().parent.parent / configured_upload_dir
 ).resolve()
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -213,6 +216,8 @@ def public_data(db: Session = Depends(get_db)):
     projects = (
         db.query(models.Project)
         .order_by(
+            models.Project.category,
+            models.Project.featured.desc(),
             models.Project.sort_order,
             models.Project.id.desc(),
         )
@@ -527,6 +532,8 @@ def list_projects(
     return (
         db.query(models.Project)
         .order_by(
+            models.Project.category,
+            models.Project.featured.desc(),
             models.Project.sort_order,
             models.Project.id.desc(),
         )

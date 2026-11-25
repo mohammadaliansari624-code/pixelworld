@@ -1,10 +1,7 @@
+import re
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, field_validator
-
-class LoginInput(BaseModel):
-    email: str
-    password: str
 
 class ProjectInput(BaseModel):
     title: str = Field(min_length=1, max_length=180)
@@ -32,6 +29,7 @@ class SettingsInput(BaseModel):
     location: str = ""
     whatsapp_number: str = ""
     booking_message: str = "Hi Pixel Wrld! I would like to book a video editing project. Please share your services, pricing, and availability."
+    instagram_username: str = ""
     instagram_url: str = ""
     facebook_url: str = ""
     youtube_url: str = ""
@@ -39,6 +37,16 @@ class SettingsInput(BaseModel):
     tiktok_url: str = ""
     behance_url: str = ""
     pinterest_url: str = ""
+
+    @field_validator("instagram_username")
+    @classmethod
+    def validate_instagram_username(cls, value: str) -> str:
+        value = value.strip()
+        if value.startswith("@"):
+            value = value[1:]
+        if value and not re.fullmatch(r"[A-Za-z0-9._]{1,30}", value):
+            raise ValueError("Instagram username must contain only letters, numbers, periods and underscores (up to 30 characters)")
+        return value
 
     @field_validator("email")
     @classmethod

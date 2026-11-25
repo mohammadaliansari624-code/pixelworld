@@ -55,6 +55,7 @@ class SiteSettings(Base):
     location: Mapped[str] = mapped_column(String(255), default="")
     whatsapp_number: Mapped[str] = mapped_column(String(30), default="+919503898739")
     booking_message: Mapped[str] = mapped_column(Text, default="Hi Pixel Wrld! I would like to book a video editing project. Please share your services, pricing, and availability.")
+    instagram_username: Mapped[str] = mapped_column(String(30), default="", nullable=False)
     instagram_url: Mapped[str] = mapped_column(String(1000), default="")
     facebook_url: Mapped[str] = mapped_column(String(1000), default="")
     youtube_url: Mapped[str] = mapped_column(String(1000), default="")

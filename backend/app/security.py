@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -8,15 +7,8 @@ from .config import settings
 from .database import get_db
 from .models import Admin
 
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 ALGORITHM = "HS256"
-
-def hash_password(password: str) -> str:
-    return pwd.hash(password)
-
-def verify_password(password: str, hashed: str) -> bool:
-    return pwd.verify(password, hashed)
 
 def create_token(admin_id: int) -> str:
     expires = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_minutes)
