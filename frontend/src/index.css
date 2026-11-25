@@ -494,3 +494,54 @@ body,
   }
 
 }
+
+
+/* Scroll driven 3D project video helix */
+.pw-helix-wrap {
+  position: relative;
+  display: flex;
+  min-height: min(84vh, 860px);
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  margin: 2rem 0 5rem;
+  padding: clamp(2rem, 5vw, 4rem) 0 1.5rem;
+  border-top: 1px solid rgba(255,255,255,.09);
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  background: radial-gradient(ellipse at 50% 55%, rgba(23,107,255,.13), transparent 58%);
+}
+.pw-helix-heading { position: relative; z-index: 2; text-align: center; }
+.pw-helix-heading p { color: #7eaeff; font-size: 9px; letter-spacing: 3px; }
+.pw-helix-heading h3 { margin: .65rem 0 .35rem; font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -.075em; line-height: .95; }
+.pw-helix-heading h3 span { color: #176bff; }
+.pw-helix-sub,.pw-helix-footnote { color: rgba(255,255,255,.48); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+.pw-helix-stage { position: relative; display: grid; place-items: center; width: 100%; height: clamp(320px, 43vw, 500px); perspective: 1100px; perspective-origin: 50% 48%; overflow: hidden; }
+.pw-helix-orbit { position: relative; width: 0; height: 0; transform: rotateX(-8deg) rotateY(-30deg); transform-style: preserve-3d; transition: transform 90ms linear; will-change: transform; }
+.pw-helix-card { position: absolute; top: 0; left: 0; width: clamp(160px, 20vw, 250px); margin: -105px 0 0; padding: 7px; border: 1px solid rgba(255,255,255,.16); border-radius: 7px; background: #11141a; color: #eeeae2; text-align: left; backface-visibility: hidden; transform: translateX(-50%) rotateY(var(--card-angle)) translateZ(clamp(200px, 28vw, 340px)); transition: border-color .25s, box-shadow .25s, opacity .25s; }
+.pw-helix-card:not(.is-active) { opacity: .74; }
+.pw-helix-card.is-active,.pw-helix-card:hover { border-color: #176bff; box-shadow: 0 0 35px rgba(23,107,255,.25); opacity: 1; }
+.pw-helix-card-media { overflow: hidden; aspect-ratio: 16 / 10; background: #08090c; }
+.pw-helix-card-media video,.pw-helix-card-media iframe,.pw-helix-card-media img { display: block; width: 100%; height: 100%; border: 0; object-fit: cover; }
+.pw-helix-card-media video,.pw-helix-card-media iframe { position: relative; z-index: 1; }
+.pw-helix-project-title { display: grid; width: 100%; gap: 4px; padding: 9px 3px 3px; text-align: left; }
+.pw-helix-project-title > span:first-child { overflow: hidden; color: #7eaeff; font-size: 8px; letter-spacing: 1.5px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.pw-helix-project-title strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.pw-helix-project-title .pw-helix-open { color: rgba(255,255,255,.42); font-size: 8px; letter-spacing: 1.2px; }
+.pw-helix-project-title:hover .pw-helix-open,.pw-helix-project-title:focus-visible .pw-helix-open { color: #7eaeff; }
+.pw-helix-no-poster { display: grid; width: 100%; height: 100%; place-items: center; color: rgba(255,255,255,.35); font-size: 9px; letter-spacing: 2px; }
+.pw-helix-center-mark { position: absolute; display: grid; place-items: center; width: 76px; height: 76px; border: 1px solid rgba(126,174,255,.45); border-radius: 50%; background: rgba(9,10,12,.8); color: #7eaeff; font-size: 20px; font-weight: 900; box-shadow: 0 0 45px rgba(23,107,255,.2); pointer-events: none; }
+.pw-helix-center-mark span { position: absolute; top: 16px; right: 14px; font-size: 8px; }
+.pw-helix-footnote { min-height: 1em; margin-top: -1rem; text-align: center; }
+@media (max-width: 639px) {
+  .pw-helix-wrap { min-height: 580px; margin: 1rem -1.25rem 3rem; padding: 2rem 0 1rem; }
+  .pw-helix-stage { height: 320px; perspective: 800px; }
+  .pw-helix-card { width: 142px; margin-top: -80px; transform: translateX(-50%) rotateY(var(--card-angle)) translateZ(170px); }
+  .pw-helix-card.is-active { z-index: 2; }
+  .pw-helix-center-mark { width: 58px; height: 58px; font-size: 16px; }
+  .pw-helix-project-title { padding-top: 6px; }
+  .pw-helix-project-title strong { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-helix-orbit { transition: none; }
+  .pw-helix-card,.pw-helix-card-media img { transition: none; }
+}
