@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { retryThenPlaceholder } from "../../lib/image-fallback"
 
 /**
  * HelixRibbonHero — scroll-driven cinematic hero. The headline lands letter by
@@ -143,18 +144,17 @@ const CSS = [
   ".hrh-card:hover .hrh-card-img img{transform:scale(1.04)}",
   ".hrh-cap{display:flex;justify-content:space-between;gap:8px;padding-top:10px;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1}",
   ".hrh-cap span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+  ".hrh-mobile-experience{display:none}",
+  "@media(max-width:719px){.hrh-root{height:auto!important;padding:0 18px 38px}.hrh-root>.hrh-stage{display:none}.hrh-root .hrh-mobile-experience{display:block;max-width:560px;margin:0 auto}.hrh-mobile-intro{position:relative;min-height:330px;display:flex;flex-direction:column;justify-content:center;padding:52px 0 34px;transition:opacity .45s ease,transform .45s ease}.hrh-mobile-kicker{position:relative;z-index:1;margin:0 0 14px;color:#7eaeff;font-size:9px;letter-spacing:.2em}.hrh-mobile-intro h2{position:relative;z-index:1;max-width:75%;margin:0;font-family:Anton,Impact,sans-serif;font-size:clamp(42px,12vw,68px);line-height:.9;letter-spacing:-.035em;text-transform:uppercase}.hrh-mobile-intro h2 span{display:block;color:#176bff}.hrh-mobile-bio{position:relative;z-index:1;max-width:28em;margin:18px 0 0;color:rgba(238,234,226,.65);font-size:13px;line-height:1.6}.hrh-mobile-intro>img{position:absolute;right:0;top:54px;width:36%;height:205px;object-fit:cover;opacity:.68;mask-image:linear-gradient(180deg,#000 65%,transparent)}.hrh-mobile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 10px}.hrh-mobile-card{min-width:0;padding:0;border:1px solid rgba(255,255,255,.13);background:#11141a;color:inherit;text-align:left;overflow:hidden;transition:transform .35s cubic-bezier(.2,.75,.2,1),border-color .25s ease,opacity .35s ease}.hrh-mobile-card:active{transform:scale(.98)}.hrh-mobile-card img{display:block;width:100%;aspect-ratio:1.16;object-fit:cover}.hrh-mobile-card span{display:block;overflow:hidden;padding:10px 9px;font-size:11px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.hrh-mobile-count{margin:19px 0 0;color:rgba(255,255,255,.4);font-size:9px;letter-spacing:.17em;text-transform:uppercase}.hrh-motion-ready .hrh-mobile-intro,.hrh-motion-ready .hrh-mobile-card{opacity:0;transform:translateY(16px) scale(.99)}.hrh-motion-ready .hrh-mobile-intro.is-visible,.hrh-motion-ready .hrh-mobile-card.is-visible{opacity:1;transform:translateY(0) scale(1)}}",
   "@keyframes hrh-rise{from{transform:translateY(60%);filter:blur(12px);opacity:0}60%{opacity:1}to{transform:none;filter:blur(0);opacity:1}}",
   "@keyframes hrh-port{from{clip-path:inset(0 0 100% 0);filter:blur(8px)}to{clip-path:inset(0 0 0 0);filter:blur(0)}}",
   "@keyframes hrh-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}",
   "@media (max-width:719px){.hrh-links{display:none}}",
   "@media (prefers-reduced-motion:reduce){.hrh-root[data-ready=true] .hrh-ch,.hrh-root[data-ready=true] .hrh-port,.hrh-root[data-ready=true] .hrh-fade{animation:none}}",
+  "@media (prefers-reduced-motion:reduce){.hrh-mobile-intro,.hrh-mobile-card{transition:none!important}.hrh-motion-ready .hrh-mobile-intro,.hrh-motion-ready .hrh-mobile-card{opacity:1!important;transform:none!important}}",
 ].join("\n")
 
 const px = (v: number) => v.toFixed(2) + "px"
-
-function prefersReduced() {
-  return typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-}
 
 export default function HelixRibbonHero({
   height = "100svh",
@@ -200,9 +200,17 @@ export default function HelixRibbonHero({
   const tiles = projects.slice(0, 6)
   const [ready, setReady] = React.useState(false)
   const [reduced, setReduced] = React.useState(false)
+  const [mobile, setMobile] = React.useState(false)
 
   React.useEffect(() => {
-    setReduced(prefersReduced())
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const updateReduced = () => setReduced(motionQuery.matches)
+    updateReduced()
+    motionQuery.addEventListener("change", updateReduced)
+    const query = window.matchMedia("(max-width: 719px)")
+    const updateMobile = () => setMobile(query.matches)
+    updateMobile()
+    query.addEventListener("change", updateMobile)
     let live = true
     const go = () => live && setReady(true)
     const fonts = typeof document !== "undefined" ? document.fonts : undefined
@@ -215,8 +223,25 @@ export default function HelixRibbonHero({
     return () => {
       live = false
       window.clearTimeout(t)
+      motionQuery.removeEventListener("change", updateReduced)
+      query.removeEventListener("change", updateMobile)
     }
   }, [])
+
+  React.useEffect(() => {
+    if (!mobile || !rootRef.current || !('IntersectionObserver' in window)) return
+    const root = rootRef.current
+    const targets = root.querySelectorAll<HTMLElement>('.hrh-mobile-intro, .hrh-mobile-card')
+    root.classList.add('hrh-motion-ready')
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => entry.target.classList.toggle('is-visible', entry.isIntersecting))
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' })
+    targets.forEach(target => observer.observe(target))
+    return () => {
+      observer.disconnect()
+      root.classList.remove('hrh-motion-ready')
+    }
+  }, [mobile])
 
   React.useEffect(() => {
     const root = rootRef.current
@@ -230,7 +255,7 @@ export default function HelixRibbonHero({
     const countEl = countRef.current
     const foot = footRef.current
     const grid = gridRef.current
-    if (!ready || !root || !stage || !view || !group || !screw || !l1 || !l2 || !port || !countEl || !foot || !grid) return
+    if (!ready || mobile || !root || !stage || !view || !group || !screw || !l1 || !l2 || !port || !countEl || !foot || !grid) return
     const slices = Array.from(screw.children) as HTMLDivElement[]
     const cards = Array.from(grid.children) as HTMLDivElement[]
     const n = ribbon.length
@@ -486,7 +511,7 @@ export default function HelixRibbonHero({
         if (Math.abs(goal - cur) < 0.00005) cur = goal
       }
       draw()
-      raf = visible ? requestAnimationFrame(tick) : 0
+      raf = visible && (auto || Math.abs(goal - cur) >= 0.00005) ? requestAnimationFrame(tick) : 0
     }
     let visible = true
     const io = new IntersectionObserver((es) => {
@@ -500,6 +525,10 @@ export default function HelixRibbonHero({
     const onUser = () => stop()
     const onScroll = () => {
       if (auto && Math.abs(target() - 0) > 0.002) stop()
+      if (visible && !raf) {
+        last = performance.now()
+        raf = requestAnimationFrame(tick)
+      }
     }
     window.addEventListener("wheel", onUser, { passive: true })
     window.addEventListener("touchstart", onUser, { passive: true })
@@ -521,7 +550,7 @@ export default function HelixRibbonHero({
       window.removeEventListener("keydown", onUser)
       window.removeEventListener("scroll", onScroll)
     }
-  }, [ready, reduced, autoPlay, greeting, name, ribbon.length, tiles.length, showNav])
+  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav])
 
   const letters = (text: string, delay0: number) =>
     Array.from(text).map((c, i) => (
@@ -535,12 +564,29 @@ export default function HelixRibbonHero({
   return (
     <section
       ref={rootRef}
-      className={"hrh-root" + (className ? " " + className : "")}
+      className={"hrh-root" + (mobile ? " hrh-mobile" : "") + (className ? " " + className : "")}
       style={{ height: "calc(" + height + " * " + (screens + 1) + ")", ["--hrh-bg" as string]: background, ["--hrh-fg" as string]: foreground, ["--hrh-top" as string]: stickyTop }}
       aria-label={greeting + " " + name}
     >
       {fontHref && <link rel="stylesheet" href={fontHref} />}
       <style>{CSS}</style>
+      <div className="hrh-mobile-experience">
+        <div className="hrh-mobile-intro">
+          <p className="hrh-mobile-kicker">PIXEL WRLD / SELECTED WORK</p>
+          <h2>{greeting} <span>{name}</span></h2>
+          {bio && <p className="hrh-mobile-bio">{bio}</p>}
+          {portrait && <img src={portrait} alt={portraitAlt} loading="lazy" decoding="async" onError={event => retryThenPlaceholder(event, portraitAlt || name)} />}
+        </div>
+        <div className="hrh-mobile-grid">
+          {tiles.map((project, index) => (
+            <button key={index} type="button" onClick={() => selectRef.current?.(index)} className="hrh-mobile-card">
+              <img src={project.src} alt={project.title} loading="lazy" decoding="async" onError={event => retryThenPlaceholder(event, project.title)} />
+              <span>{project.title}</span>
+            </button>
+          ))}
+        </div>
+        <p className="hrh-mobile-count">{count}</p>
+      </div>
       <div ref={stageRef} className="hrh-stage" style={{ height, width: "100%" }}>
         <div ref={viewRef} className="hrh-view">
           <div className="hrh-scene">
@@ -551,7 +597,7 @@ export default function HelixRibbonHero({
               {letters(restWords.trimStart(), 0.08 + (firstWord.length + 1) * 0.045)}
             </h2>
             <div ref={portRef} className="hrh-port">
-              {portrait && <img src={portrait} alt={portraitAlt} width={480} height={600} style={{ maxWidth: "none" }} draggable={false} />}
+              {portrait && <img src={portrait} alt={portraitAlt} width={480} height={600} loading="lazy" decoding="async" onError={event => retryThenPlaceholder(event, portraitAlt || name)} style={{ maxWidth: "none" }} draggable={false} />}
             </div>
             <div ref={l2Ref} className="hrh-line" aria-hidden="true" style={nameColor ? { color: nameColor } : undefined}>
               {letters(name, 0.3)}
@@ -591,7 +637,7 @@ export default function HelixRibbonHero({
               }}
             >
               <div className="hrh-card-img">
-                <img src={pr.src} alt={pr.title} width={720} height={480} style={{ maxWidth: "none" }} draggable={false} />
+                <img src={pr.src} alt={pr.title} width={720} height={480} loading="lazy" decoding="async" onError={event => retryThenPlaceholder(event, pr.title)} style={{ maxWidth: "none" }} draggable={false} />
               </div>
               <div className="hrh-cap" style={{ opacity: 0 }}>
                 <span>{pr.title}</span>
