@@ -802,3 +802,100 @@ body,
   .pw-project-rail > .pw-more-projects .pw-more-projects-copy > span:nth-child(2) { font-size: 12px; }
   .pw-project-rail > .pw-more-projects .pw-more-projects-copy > span:last-child { font-size: 10px; }
 }
+
+
+/* Category-specific Glass Folder / expand-all portfolio layout */
+.pw-project-rail--expanded {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 14px;
+  overflow: visible;
+  padding-bottom: 0;
+  scroll-snap-type: none;
+}
+.pw-project-rail--expanded > .pw-project-card {
+  width: auto;
+  min-width: 0;
+}
+.pw-glass-folder-slot {
+  display: flex;
+  width: 260px;
+  min-height: 312px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 260px;
+  overflow: visible;
+}
+.pw-project-rail--expanded .pw-glass-folder-slot {
+  width: 100%;
+  min-width: 0;
+  flex: initial;
+}
+@media (max-width: 639px) {
+  .pw-project-rail:not(.pw-project-rail--expanded) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .pw-project-rail:not(.pw-project-rail--expanded) > .pw-project-card {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+  .pw-project-rail--expanded {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+  }
+  .pw-project-rail--expanded > .pw-project-card {
+    width: auto;
+  }
+  .pw-glass-folder-slot,
+  .pw-project-rail--expanded .pw-glass-folder-slot {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 260px;
+    flex: initial;
+  }
+  .pw-glass-folder-slot .gf-root {
+    max-width: calc(100vw - 36px);
+  }
+}
+@media (min-width: 520px) and (max-width: 639px) {
+  .pw-project-rail:not(.pw-project-rail--expanded),
+  .pw-project-rail--expanded {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+/* People section typography refinement */
+#team .team-member-name {
+  font-size: clamp(24px, 2vw, 30px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: #eeeae2;
+}
+#team .team-member-role {
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: 0.12em;
+  color: rgb(255 255 255 / 62%);
+}
+#team .team-member-bio {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 72%);
+}
+#team .team-member-social {
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 72%);
+}
+@media (max-width: 640px) {
+  #team .team-member-name { font-size: clamp(21px, 5.8vw, 25px); }
+  #team .team-member-role { font-size: 12px; letter-spacing: 0.09em; }
+  #team .team-member-bio { font-size: 13px; line-height: 1.55; }
+  #team .team-member-social { font-size: 12px; }
+}
