@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import HelixRibbonHero, { type HelixProject } from './ui/helix-ribbon-hero';
 import { placeholderFor } from '../lib/image-fallback';
 
@@ -9,47 +9,11 @@ export type PortfolioProject = {
   thumbnail_url: string;
 };
 
-const withRetryParam = (src: string) => src + (src.includes('?') ? '&' : '?') + 'pwr=1';
-
-/**
- * Loads every thumbnail once, up front. A failed image is retried once (covers a
- * flaky mobile connection or a cold backend) and then swapped for a placeholder,
- * so the ribbon and grid never show an empty tile.
- */
-function useSafeImages(sources: string[]) {
-  const [resolved, setResolved] = useState<Record<string, string>>({});
-  const key = sources.join('|');
-  useEffect(() => {
-    let live = true;
-    const timers: number[] = [];
-    const set = (src: string, value: string) => live && setResolved(prev => (prev[src] === value ? prev : { ...prev, [src]: value }));
-    sources.forEach(src => {
-      if (!src) return;
-      const attempt = (url: string, retried: boolean) => {
-        const img = new Image();
-        img.decoding = 'async';
-        img.onload = () => { if (url !== src) set(src, url); };
-        img.onerror = () => {
-          if (!retried) timers.push(window.setTimeout(() => attempt(withRetryParam(src), true), 1500));
-          else set(src, '');
-        };
-        img.src = url;
-      };
-      attempt(src, false);
-    });
-    return () => { live = false; timers.forEach(window.clearTimeout); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return resolved;
-}
-
 export function PortfolioHero({ projects, bio, onSelect }: { projects: PortfolioProject[]; bio: string; onSelect: (id: number) => void }) {
-  const resolved = useSafeImages(projects.map(project => project.thumbnail_url));
   const items = useMemo(() => projects.map(project => {
-    const state = resolved[project.thumbnail_url];
-    const src = !project.thumbnail_url || state === '' ? placeholderFor(project.title) : state || project.thumbnail_url;
+    const src = project.thumbnail_url || placeholderFor(project.title);
     return { id: project.id, helix: { src, title: project.title } as HelixProject };
-  }), [projects, resolved]);
+  }), [projects]);
 
   if (!items.length) return null;
   const grid = items.slice(0, 6).map(item => item.helix);

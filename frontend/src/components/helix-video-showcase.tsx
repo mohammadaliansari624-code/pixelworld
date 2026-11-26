@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 import { getProjectVideoSource } from '../lib/project-video';
 
 export type ShowcaseProject = {
@@ -35,6 +36,7 @@ export function HelixVideoShowcase({ projects, onSelect }: Props) {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [inView, setInView] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   // Detect when the showcase enters the viewport.
   useEffect(() => {
@@ -43,7 +45,7 @@ export function HelixVideoShowcase({ projects, onSelect }: Props) {
 
     const observer = new IntersectionObserver(
       ([entry]) => setInView(entry.isIntersecting),
-      { rootMargin: '100px 0px', threshold: 0 },
+      { rootMargin: '0px', threshold: 0.15 },
     );
 
     observer.observe(section);
@@ -57,6 +59,10 @@ export function HelixVideoShowcase({ projects, onSelect }: Props) {
     const section = sectionRef.current;
 
     if (!orbit || !section || !inView || items.length < 2) return;
+    if (reducedMotion) {
+      orbit.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      return;
+    }
 
     let frame = 0;
     let previousTime = 0;
@@ -117,7 +123,7 @@ export function HelixVideoShowcase({ projects, onSelect }: Props) {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [inView, items.length]);
+  }, [inView, items.length, reducedMotion]);
 
   // Nothing to show if there are no projects.
   if (!items.length) return null;
