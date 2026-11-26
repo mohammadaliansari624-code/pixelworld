@@ -67,7 +67,7 @@ section[id] {
   font-family: "Arial Black", Inter, Arial, sans-serif;
   font-style: italic;
   font-weight: 900;
-  letter-spacing: -.07em;
+  letter-spacing: -.025em;
   transform: skewX(-7deg) scaleX(.97);
   transform-origin: center;
 }
@@ -85,7 +85,7 @@ section[id] {
   font-size: clamp(2.7rem, 5.4vw, 5rem);
   font-weight: 900;
   line-height: .86;
-  letter-spacing: -.08em;
+  letter-spacing: -.025em;
 }
 
 .service-motion-section {
@@ -107,7 +107,7 @@ section[id] {
   font-size: clamp(2.6rem, 5.4vw, 5rem);
   font-weight: 850;
   line-height: .9;
-  letter-spacing: -.08em;
+  letter-spacing: -.025em;
 }
 
 .infinite-corridor {
@@ -187,7 +187,7 @@ section[id] {
   font-size: clamp(2.35rem, 5.1vw, 4.8rem);
   font-weight: 900;
   line-height: .98;
-  letter-spacing: -.065em;
+  letter-spacing: -.02em;
 }
 
 .about-heading span { color: #176bff; }
@@ -564,7 +564,7 @@ body,
 }
 .pw-helix-heading { position: relative; z-index: 2; text-align: center; }
 .pw-helix-heading p { color: #7eaeff; font-size: 9px; letter-spacing: 3px; }
-.pw-helix-heading h3 { margin: .65rem 0 .35rem; font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -.075em; line-height: .95; }
+.pw-helix-heading h3 { margin: .65rem 0 .35rem; font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -.02em; line-height: .95; }
 .pw-helix-heading h3 span { color: #176bff; }
 .pw-helix-sub,.pw-helix-footnote { color: rgba(255,255,255,.48); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
 .pw-helix-stage { position: relative; display: grid; place-items: center; width: 100%; height: clamp(320px, 43vw, 500px); perspective: 1100px; perspective-origin: 50% 48%; overflow: hidden; }
@@ -653,7 +653,7 @@ body,
   font-size: clamp(38px, 7vw, 88px);
   font-weight: 900;
   line-height: .88;
-  letter-spacing: -.075em;
+  letter-spacing: -.02em;
 }
 .pw-cinematic-copy h3 span { color: #176bff; }
 .pw-cinematic-hint {
@@ -835,12 +835,24 @@ body,
     width: 100%;
     min-width: 0;
     min-height: 0;
-    aspect-ratio: 1 / 1.48;
+    aspect-ratio: auto;
     flex: initial;
   }
   .pw-glass-folder-slot .gf-root {
-    width: min(100%, 148px) !important;
+    width: 100% !important;
     height: auto !important;
+    aspect-ratio: 1 / 1.48;
+    overflow: hidden;
+    container-type: inline-size;
+  }
+  .pw-glass-folder-slot .gf-stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 220px;
+    height: 250px;
+    transform: translate(-50%, -50%) scale(calc((100cqw / 220) * .9)) !important;
+    transform-origin: center;
   }
 }
 .pw-gallery-overlay {
@@ -893,12 +905,14 @@ body,
   transition: background .2s ease, border-color .2s ease;
 }
 .pw-gallery-back:hover { border-color: #176bff; background: #176bff; }
-.pw-gallery-header h2 { text-align: center; font-size: clamp(20px, 3vw, 34px); font-weight: 700; letter-spacing: -.04em; }
+.pw-gallery-header h2 { text-align: center; font-size: clamp(20px, 3vw, 34px); font-weight: 700; letter-spacing: -.01em; }
 .pw-gallery-header h2 span { color: rgb(255 255 255 / 40%); font-weight: 400; }
 .pw-gallery-count { text-align: center; color: rgb(255 255 255 / 52%); font-size: 11px; }
 .pw-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  /* Keep unused tracks so a small category cannot stretch one card across the overlay. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  justify-content: start;
   gap: 14px;
 }
 .pw-gallery-grid > .pw-project-card { width: auto; min-width: 0; }
@@ -945,4 +959,32 @@ body,
   #team .team-member-role { font-size: 12px; letter-spacing: 0.09em; }
   #team .team-member-bio { font-size: 13px; line-height: 1.55; }
   #team .team-member-social { font-size: 12px; }
+}
+
+/* Mobile readability: raise decorative microcopy and card labels without changing desktop type. */
+@media (max-width: 719px) {
+  header button:first-child { font-size: 11px; }
+  main > div.overflow-hidden.border-y { font-size: 13px; }
+  #work > div > div > div > p { font-size: 14px; line-height: 1.6; }
+  .pw-project-card-copy > p:first-child { font-size: 10px; letter-spacing: .06em; }
+  .pw-project-card-copy > h4 { font-size: clamp(12px, 3.3vw, 14px); line-height: 1.35; }
+  .pw-project-card > div > span:first-of-type { font-size: 9px; }
+  .pw-gallery-header > div > p:first-child { font-size: 10px; }
+  .pw-gallery-count { font-size: 13px; }
+  .pw-helix-heading p,
+  .pw-helix-sub,
+  .pw-helix-footnote { font-size: 11px; line-height: 1.5; }
+  .pw-helix-project-title > span:first-child { font-size: 10px; }
+  .pw-helix-project-title strong { font-size: 13px; }
+  .pw-helix-project-title .pw-helix-open { font-size: 10px; }
+  .pw-helix-no-poster { font-size: 11px; }
+  .pw-cinematic-topline,
+  .pw-cinematic-bottomline,
+  .pw-cinematic-copy p,
+  .pw-cinematic-hint,
+  .pw-cinematic-project-link span { font-size: 10px; line-height: 1.5; }
+  .pw-cinematic-project-link strong { font-size: 14px; }
+  .service-motion-foot { font-size: 10px; line-height: 1.5; }
+  #contact ul { font-size: 13px; }
+  footer { font-size: 11px; line-height: 1.5; }
 }
