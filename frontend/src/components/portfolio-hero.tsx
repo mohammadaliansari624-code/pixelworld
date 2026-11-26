@@ -60,7 +60,9 @@ export function PortfolioHero({ projects, bio, onSelect }: { projects: Portfolio
     return { id: project.id, helix: { src, title: project.title } as HelixProject };
   }), [projects, resolved]);
 
-  if (!items.length) return null;
+  // The category rails immediately below this component are the mobile portfolio.
+  // Skipping the ribbon entirely avoids mounting its scroll loop, pin range and 3D image layers.
+  if (mobile || !items.length) return null;
   const grid = items.slice(0, 6).map(item => item.helix);
   // The ribbon needs enough cards to read as a ribbon; a short catalogue is cycled to fill it.
   const ribbonLength = mobile ? 4 : Math.min(12, Math.max(8, items.length));
