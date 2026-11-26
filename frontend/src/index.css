@@ -289,9 +289,7 @@ section[id] {
 @media (max-width: 719px) {
   :root { --pw-header-h: 68px; }
   .hero { min-height: min(76svh, 560px) !important; padding-block: 72px !important; }
-  .hero > div:first-child { display: none; }
-  .hero > div:nth-child(2) { background: radial-gradient(ellipse at 50% 48%, rgb(23 107 255 / 14%), transparent 58%), linear-gradient(180deg,#08090b,#030405); }
-  .hero img { width: min(620px, 94vw); }
+  .hero > div:last-child img { width: min(620px, 94vw); }
   header button:first-child { min-height: 42px; padding: 10px 11px; font-size: 9px; white-space: nowrap; }
   header button:last-child { flex: none; }
   .section-heading { font-size: clamp(2.25rem, 10vw, 3.6rem); }
@@ -310,8 +308,6 @@ section[id] {
   .service-motion-heading h2 { font-size: clamp(34px, 10vw, 52px); }
   .service-marquee__track { animation-duration: 64s; }
   .service-pill { font-size: 14px; }
-  .infinite-corridor__space { animation: none; }
-  .infinite-corridor__panel:nth-child(n + 5) { display: none; }
   .pw-cinematic-section { height: auto; min-height: 0; margin-block: 30px; }
   .pw-cinematic-sticky { position: relative; top: auto; height: auto; min-height: 0; gap: 26px; padding: 20px 18px 24px; }
   .pw-cinematic-copy { padding: 8px 0 0; }
