@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Integer, LargeBinary, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -78,3 +78,17 @@ class Review(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class UploadedImage(Base):
+    """Durable copy of every uploaded image.
+
+    Hosting disks are often ephemeral (redeploys, restarts, scaling), which made uploaded
+    thumbnails and team photos vanish. The bytes live in PostgreSQL; the file on disk is
+    only a fast cache that is re-created on demand.
+    """
+    __tablename__ = "uploaded_images"
+    filename: Mapped[str] = mapped_column(String(80), primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(60))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

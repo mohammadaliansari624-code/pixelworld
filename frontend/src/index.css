@@ -301,7 +301,20 @@ html,
 body,
 #root {
   max-width: 100%;
+}
+
+/* Hide sideways overflow WITHOUT creating scroll containers: `overflow-x: hidden` on body or
+   #root silently turns them into scroll containers, and `position: sticky` (the pinned
+   portfolio hero and the site header) then pins to them instead of the viewport, which
+   is what produced the blank screen. Only the root element keeps `hidden` as a fallback. */
+html {
   overflow-x: hidden;
+}
+
+html,
+body,
+#root {
+  overflow-x: clip;
 }
 
 [data-spotlight]::before {
@@ -544,4 +557,209 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .pw-helix-orbit { transition: none; }
   .pw-helix-card,.pw-helix-card-media img { transition: none; }
+}
+
+
+/* =========================================================
+   PIXEL WRLD — SCROLL-DRIVEN CINEMATIC SHOWCASE
+   ========================================================= */
+.pw-cinematic-section {
+  position: relative;
+  height: calc(100vh * var(--cinematic-count, 1) + 100vh);
+  min-height: 900px;
+  margin: 3rem 0 5rem;
+  isolation: isolate;
+}
+.pw-cinematic-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 620px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(22px, 4vw, 58px);
+  padding-top: calc(clamp(22px, 4vw, 58px) + 76px); /* clear the sticky site header */
+  background:
+    radial-gradient(ellipse at 50% 54%, rgba(23,107,255,.11), transparent 48%),
+    #090a0c;
+}
+.pw-cinematic-topline,
+.pw-cinematic-bottomline {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: rgba(255,255,255,.48);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.pw-cinematic-copy {
+  position: relative;
+  z-index: 4;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+  padding: 2vh 0 1vh;
+}
+.pw-cinematic-copy p {
+  margin-bottom: 14px;
+  color: #7eaeff;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+}
+.pw-cinematic-copy h3 {
+  font-size: clamp(38px, 7vw, 88px);
+  font-weight: 900;
+  line-height: .88;
+  letter-spacing: -.075em;
+}
+.pw-cinematic-copy h3 span { color: #176bff; }
+.pw-cinematic-hint {
+  display: inline-block;
+  margin-top: 16px;
+  color: rgba(255,255,255,.4);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.pw-cinematic-perspective {
+  position: absolute;
+  inset: 23% 0 13%;
+  display: grid;
+  place-items: center;
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+  overflow: visible;
+}
+.pw-cinematic-frame {
+  position: relative;
+  width: min(78vw, 1120px);
+  height: min(52vh, 650px);
+  min-height: 260px;
+  overflow: hidden;
+  background: #11151d;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 35px 110px rgba(0,0,0,.65), 0 0 70px rgba(23,107,255,.12);
+  transform:
+    translateX(var(--cinematic-translate-x, 10%))
+    rotateY(var(--cinematic-rotate-y, 22deg))
+    rotateZ(var(--cinematic-rotate-z, -3.5deg))
+    scaleX(var(--cinematic-scale-x, .34))
+    scaleY(var(--cinematic-scale-y, .62));
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.pw-cinematic-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #101216;
+  transition: none;
+  will-change: opacity, transform;
+}
+.pw-cinematic-media img,
+.pw-cinematic-media video,
+.pw-cinematic-media iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+.pw-cinematic-media img,
+.pw-cinematic-media video { filter: saturate(.9); }
+.pw-cinematic-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #7eaeff;
+  font-size: clamp(22px, 5vw, 60px);
+  font-weight: 900;
+  letter-spacing: .2em;
+}
+.pw-cinematic-project-link {
+  position: absolute;
+  z-index: 3;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: min(70%, 360px);
+  padding: 13px 16px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.58);
+  color: white;
+  text-align: right;
+  backdrop-filter: blur(12px);
+}
+.pw-cinematic-project-link span {
+  color: #91b9ff;
+  font-size: 8px;
+  letter-spacing: 1.8px;
+}
+.pw-cinematic-project-link strong {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: clamp(13px, 1.6vw, 19px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pw-cinematic-bottomline { justify-content: flex-start; }
+.pw-cinematic-progress {
+  height: 2px;
+  flex: 1;
+  overflow: hidden;
+  background: rgba(255,255,255,.16);
+}
+.pw-cinematic-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #176bff;
+  transform-origin: left center;
+}
+@media (max-width: 700px) {
+  .pw-cinematic-section {
+    height: calc(100svh * var(--cinematic-count, 1) + 60svh);
+    min-height: 780px;
+    margin: 2rem 0 3rem;
+  }
+  .pw-cinematic-sticky {
+    height: 100svh;
+    min-height: 560px;
+    padding: 22px 18px;
+  }
+  .pw-cinematic-copy { padding-top: 5vh; }
+  .pw-cinematic-copy h3 { font-size: clamp(38px, 12vw, 62px); }
+  .pw-cinematic-perspective { inset: 32% -8% 17%; }
+  .pw-cinematic-frame {
+    width: 88vw;
+    height: 38vh;
+    min-height: 220px;
+  }
+  .pw-cinematic-project-link { right: 9px; bottom: 9px; padding: 9px 11px; }
+  .pw-cinematic-topline,
+  .pw-cinematic-bottomline { font-size: 7px; letter-spacing: 1.2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-cinematic-frame { transform: none; }
+}
+
+/* Fixed header height, shared by the sticky header and the pinned portfolio hero */
+:root { --pw-header-h: 77px; }
+@media (min-width: 768px) { :root { --pw-header-h: 85px; } }
+
+/* Folder tile: full-width strip under the 3 x 2 mobile grid */
+@media (max-width: 639px) {
+  .pw-project-rail > .pw-more-projects { grid-column: 1 / -1; display: flex; align-items: center; gap: .75rem; }
+  .pw-project-rail > .pw-more-projects .pw-more-projects-visual { aspect-ratio: auto; width: 4.5rem; flex: none; padding: .5rem 0; }
+  .pw-project-rail > .pw-more-projects .pw-more-projects-copy { flex: 1; padding: .5rem .5rem .5rem 0; }
+  .pw-project-rail > .pw-more-projects .pw-more-projects-copy > span:nth-child(2) { font-size: 12px; }
+  .pw-project-rail > .pw-more-projects .pw-more-projects-copy > span:last-child { font-size: 10px; }
 }

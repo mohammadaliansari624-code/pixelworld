@@ -55,3 +55,12 @@
 **/*~
 **/.DS_Store
 **/Thumbs.db
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+uploads/
