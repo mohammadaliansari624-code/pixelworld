@@ -4,15 +4,14 @@ from uuid import uuid4
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .database import get_db
+from .database import SessionLocal, get_db
 from . import models, schemas
 from .security import create_token, current_admin
 
@@ -38,6 +37,8 @@ allowed_origins = list(dict.fromkeys(allowed_origins))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    # Phones testing over Wi-Fi reach the dev server through a private LAN address.
+    allow_origin_regex=r"^https?://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,17 +49,37 @@ app.add_middleware(
 # UPLOAD CONFIGURATION
 # --------------------------------------------------
 
+configured_upload_dir = Path(settings.upload_dir)
 UPLOAD_DIR = (
-    Path(__file__).resolve().parent.parent / settings.upload_dir
+    configured_upload_dir
+    if configured_upload_dir.is_absolute()
+    else Path(__file__).resolve().parent.parent / configured_upload_dir
 ).resolve()
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-app.mount(
-    "/uploads",
-    StaticFiles(directory=str(UPLOAD_DIR)),
-    name="uploads",
-)
+_UPLOAD_CACHE_HEADERS = {"Cache-Control": "public, max-age=31536000, immutable"}  # filenames are random UUIDs
+
+
+@app.get("/uploads/{filename}", include_in_schema=False)
+def serve_upload(filename: str, db: Session = Depends(get_db)):
+    """Serve an upload from the disk cache, falling back to the durable copy in PostgreSQL."""
+    if not filename or Path(filename).name != filename or filename.startswith("."):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    candidate = UPLOAD_DIR / filename
+    if candidate.is_file():
+        return FileResponse(candidate, headers=_UPLOAD_CACHE_HEADERS)
+
+    row = db.get(models.UploadedImage, filename)
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    try:  # re-create the disk cache; failure is harmless
+        candidate.write_bytes(row.data)
+    except OSError:
+        pass
+    return Response(content=row.data, media_type=row.content_type, headers=_UPLOAD_CACHE_HEADERS)
 
 MAX_IMAGE_SIZE = 8 * 1024 * 1024
 
@@ -117,6 +138,12 @@ def _cleanup_uploaded_image_if_unused(db: Session, image_url: str):
     except OSError:
         # A stale upload is safer than failing a successfully saved API operation.
         pass
+
+    try:
+        db.query(models.UploadedImage).filter(models.UploadedImage.filename == filename).delete()
+        db.commit()
+    except Exception:
+        db.rollback()
 
 
 # --------------------------------------------------
@@ -213,6 +240,8 @@ def public_data(db: Session = Depends(get_db)):
     projects = (
         db.query(models.Project)
         .order_by(
+            models.Project.category,
+            models.Project.featured.desc(),
             models.Project.sort_order,
             models.Project.id.desc(),
         )
@@ -320,6 +349,7 @@ def submit_review(data: schemas.GoogleReviewInput, db: Session = Depends(get_db)
 @app.post("/api/admin/upload-image")
 async def upload_image(
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     _: models.Admin = Depends(current_admin),
 ):
     """Upload a portfolio thumbnail or team photo. Max size: 8 MiB."""
@@ -356,8 +386,13 @@ async def upload_image(
         )
 
     filename = f"{uuid4().hex}{extension}"
-    destination = UPLOAD_DIR / filename
-    destination.write_bytes(content)
+    # PostgreSQL is the source of truth; the disk file is a cache that may be wiped at any time.
+    db.add(models.UploadedImage(filename=filename, content_type=content_type, data=content))
+    db.commit()
+    try:
+        (UPLOAD_DIR / filename).write_bytes(content)
+    except OSError:
+        pass
 
     return {
         "url": f"/uploads/{filename}",
@@ -527,6 +562,8 @@ def list_projects(
     return (
         db.query(models.Project)
         .order_by(
+            models.Project.category,
+            models.Project.featured.desc(),
             models.Project.sort_order,
             models.Project.id.desc(),
         )
@@ -741,6 +778,29 @@ def update_settings(
     db.refresh(row)
 
     return row
+
+
+# --------------------------------------------------
+# ONE-TIME BACKFILL: copy images already on disk into PostgreSQL
+# --------------------------------------------------
+
+@app.on_event("startup")
+def backfill_uploads_into_database():
+    media_types = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif"}
+    db = SessionLocal()
+    try:
+        known = {name for (name,) in db.query(models.UploadedImage.filename).all()}
+        for path in UPLOAD_DIR.iterdir():
+            media_type = media_types.get(path.suffix.lower())
+            if not media_type or not path.is_file() or path.name in known or len(path.name) > 80:
+                continue
+            db.add(models.UploadedImage(filename=path.name, content_type=media_type, data=path.read_bytes()))
+        db.commit()
+    except Exception as error:  # table missing (migration not run yet) must never stop the API
+        db.rollback()
+        print(f"[uploads] backfill skipped: {error}")
+    finally:
+        db.close()
 
 
 # --------------------------------------------------

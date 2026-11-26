@@ -4,7 +4,7 @@ from pydantic import field_validator
 class Settings(BaseSettings):
     database_url: str
     jwt_secret: str
-    access_token_minutes: int = 720
+    access_token_minutes: int = 240
     frontend_origin: str = "http://localhost:5173"
     upload_dir: str = "uploads"
     google_client_id: str = ""
