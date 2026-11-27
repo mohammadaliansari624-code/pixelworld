@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import HelixRibbonHero, { type HelixProject } from './ui/helix-ribbon-hero';
 import { placeholderFor } from '../lib/image-fallback';
 
@@ -51,7 +51,7 @@ function useSafeImages(sources: string[], mobile: boolean) {
   return resolved;
 }
 
-export function PortfolioHero({ projects, bio }: { projects: PortfolioProject[]; bio: string; onSelect: (id: number) => void }) {
+export function PortfolioHero({ projects, bio, finale }: { projects: PortfolioProject[]; bio: string; onSelect: (id: number) => void; finale?: ReactNode }) {
   const mobile = useMobileViewport();
   const resolved = useSafeImages(projects.map(project => project.thumbnail_url), mobile);
   const items = useMemo(() => projects.map(project => {
@@ -62,7 +62,8 @@ export function PortfolioHero({ projects, bio }: { projects: PortfolioProject[];
 
   // Mobile skips the ribbon. On desktop, the ribbon is a cinematic transition only;
   // category-specific project rails below are the actual portfolio, so no mixed grid lands here.
-  if (mobile || !items.length) return null;
+  // Without the ribbon the finale (Featured Projects) simply stands on its own, directly in the flow.
+  if (mobile || !items.length) return <>{finale}</>;
   const grid = items.slice(0, 6).map(item => item.helix);
   // The ribbon needs enough cards to read as a ribbon; a short catalogue is cycled to fill it.
   const ribbonLength = Math.min(12, Math.max(8, items.length));
@@ -85,5 +86,6 @@ export function PortfolioHero({ projects, bio }: { projects: PortfolioProject[];
     background="#090a0c"
     foreground="#eeeae2"
     showNav={false}
+    finale={finale}
   />;
 }

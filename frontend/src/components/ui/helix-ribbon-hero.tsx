@@ -54,6 +54,9 @@ export interface HelixRibbonHeroProps {
   background?: string
   foreground?: string
   autoPlay?: boolean
+  /** Content that takes over the instant the ribbon has left: it overlaps the last stage-height
+   * of the pinned run, fades/rises in on the ribbon's own progress, and the stage releases as it lands. */
+  finale?: React.ReactNode
   /** Google Fonts stylesheet, or null to bring your own Anton and Inter Tight. */
   fontHref?: string | null
   className?: string
@@ -77,7 +80,14 @@ export const PHASE = {
   gridScroll: [0.8, 1],
   calmOut: [0.04, 0.2],
   calmIn: [0.42, 0.58],
+  // Progress at which the ribbon has fully left the screen (measured: gone by ~0.535). The pinned run
+  // ends here when no grid follows, so the stage releases as the ribbon exits instead of idling empty.
+  exit: 0.56,
 }
+
+// Finale reveal, as offsets before the end of the run: opacity ramps over [end - fade[0], end - fade[1]],
+// the content rises "rise" px while doing so, and is fully settled before the stage releases.
+export const FINALE = { fade: [0.12, 0.04], rise: 36 }
 
 export const HELIX = { perTurn: 7, slices: 4, pitch: 1.34, tiltZ: -17, tiltX: -9 }
 
@@ -114,6 +124,8 @@ export function autoProgress(ms: number) {
 const CSS = [
   ".hrh-root{position:relative;width:100%;isolation:isolate}",
   ".hrh-root img{max-width:none;display:block}",
+  ".hrh-finale{position:relative;z-index:2;display:flex;flex-direction:column;margin-top:calc(var(--hrh-h) * -1);min-height:var(--hrh-h)}",
+  ".hrh-finale>*{flex:1 0 auto}",
   ".hrh-stage{position:sticky;top:var(--hrh-top,0px);overflow:hidden;color:var(--hrh-fg);background:var(--hrh-bg);--hrh-g:clamp(16px,2.2vw,32px);font-family:'Inter Tight',ui-sans-serif,system-ui,sans-serif}",
   ".hrh-view{position:absolute;inset:0;perspective-origin:50% 50%}",
   ".hrh-scene{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}",
@@ -176,6 +188,7 @@ export default function HelixRibbonHero({
   background = "#f2140c",
   foreground = "#f7f3ee",
   autoPlay = false,
+  finale,
   fontHref = FONT_HREF,
   className,
 }: HelixRibbonHeroProps) {
@@ -190,6 +203,7 @@ export default function HelixRibbonHero({
   const countRef = React.useRef(null as HTMLDivElement | null)
   const footRef = React.useRef(null as HTMLDivElement | null)
   const gridRef = React.useRef(null as HTMLDivElement | null)
+  const finaleRef = React.useRef(null as HTMLDivElement | null)
   const selectRef = React.useRef(onSelect)
   selectRef.current = onSelect
   const [mobile, setMobile] = React.useState(false)
@@ -202,7 +216,7 @@ export default function HelixRibbonHero({
   // Nothing lands after the ribbon when there are no grid tiles, so the timeline stops where the
   // last visible thing leaves the screen. Without this the pinned stage stays on an empty
   // screen for the rest of the scroll run (the blank gap before the next section).
-  const runSpan = mobile || tiles.length ? 1 : reduced ? PHASE.calmOut[1] : PHASE.helix[1] + 0.01
+  const runSpan = mobile || tiles.length ? 1 : reduced ? PHASE.calmOut[1] : PHASE.exit
 
   React.useEffect(() => {
     setReduced(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
@@ -238,6 +252,7 @@ export default function HelixRibbonHero({
     const countEl = countRef.current
     const foot = footRef.current
     const grid = gridRef.current
+    const finaleEl = finaleRef.current
     if (!ready || !root || !stage || !view || !group || !screw || !l1 || !l2 || !port || !countEl || !foot || !grid) return
     const slices = Array.from(screw.children) as HTMLDivElement[]
     const cards = Array.from(grid.children) as HTMLDivElement[]
@@ -407,6 +422,14 @@ export default function HelixRibbonHero({
         }
       }
 
+      if (finaleEl) {
+        // calm = prefers-reduced-motion: no fade or rise, the finale simply scrolls up over the stage
+        const f = calm ? 1 : easeOut(seg(p, runSpan - FINALE.fade[0], runSpan - FINALE.fade[1]))
+        finaleEl.style.opacity = String(f)
+        finaleEl.style.transform = f >= 1 ? "" : "translateY(" + px((1 - f) * FINALE.rise) + ")"
+        finaleEl.style.pointerEvents = f > 0.6 ? "" : "none"
+      }
+
       const scrollY = gridScroll(p)
       const avail = H - L.top - L.g
       const landY = H * 0.4
@@ -533,7 +556,7 @@ export default function HelixRibbonHero({
       window.removeEventListener("keydown", onUser)
       window.removeEventListener("scroll", onScroll)
     }
-  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav, runSpan])
+  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav, runSpan, !!finale])
 
   const letters = (text: string, delay0: number) =>
     Array.from(text).map((c, i) => (
@@ -545,6 +568,7 @@ export default function HelixRibbonHero({
   const restWords = greeting.slice(firstWord.length)
 
   return (
+    <>
     <section
       ref={rootRef}
       className={"hrh-root" + (mobile ? " hrh-mobile" : "") + (className ? " " + className : "")}
@@ -636,5 +660,7 @@ export default function HelixRibbonHero({
         )}
       </div>
     </section>
+    {finale && <div ref={finaleRef} className="hrh-finale" style={{ ["--hrh-h" as string]: height }}>{finale}</div>}
+    </>
   )
 }
