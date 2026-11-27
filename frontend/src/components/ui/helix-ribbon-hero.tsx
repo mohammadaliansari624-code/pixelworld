@@ -199,6 +199,10 @@ export default function HelixRibbonHero({
   const tiles = projects.slice(0, 6)
   const [ready, setReady] = React.useState(false)
   const [reduced, setReduced] = React.useState(false)
+  // Nothing lands after the ribbon when there are no grid tiles, so the timeline stops where the
+  // last visible thing leaves the screen. Without this the pinned stage stays on an empty
+  // screen for the rest of the scroll run (the blank gap before the next section).
+  const runSpan = mobile || tiles.length ? 1 : reduced ? PHASE.calmOut[1] : PHASE.helix[1] + 0.01
 
   React.useEffect(() => {
     setReduced(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
@@ -461,7 +465,7 @@ export default function HelixRibbonHero({
     const target = () => {
       const r = root.getBoundingClientRect()
       const run = r.height - stage.offsetHeight - pin
-      return run > 0 ? clamp01((pin - r.top) / run) : 0
+      return run > 0 ? clamp01((pin - r.top) / run) * runSpan : 0
     }
     let auto = autoPlay && !reduced && target() < 0.002
     let autoT0 = -1
@@ -480,7 +484,7 @@ export default function HelixRibbonHero({
       if (auto) {
         if (now - start > INTRO) {
           if (autoT0 < 0) autoT0 = now
-          goal = autoProgress(now - autoT0)
+          goal = autoProgress(now - autoT0) * runSpan
         } else goal = 0
       } else goal = target()
       if (reduced) cur = goal
@@ -529,7 +533,7 @@ export default function HelixRibbonHero({
       window.removeEventListener("keydown", onUser)
       window.removeEventListener("scroll", onScroll)
     }
-  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav])
+  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav, runSpan])
 
   const letters = (text: string, delay0: number) =>
     Array.from(text).map((c, i) => (
@@ -544,7 +548,7 @@ export default function HelixRibbonHero({
     <section
       ref={rootRef}
       className={"hrh-root" + (mobile ? " hrh-mobile" : "") + (className ? " " + className : "")}
-      style={{ height: "calc(" + height + " * " + (mobile ? 3 : screens + 1) + ")", ["--hrh-mobile-stage-height" as string]: height, ["--hrh-bg" as string]: background, ["--hrh-fg" as string]: foreground, ["--hrh-top" as string]: stickyTop }}
+      style={{ height: "calc(" + height + " * " + (mobile ? 3 : screens * runSpan + 1) + ")", ["--hrh-mobile-stage-height" as string]: height, ["--hrh-bg" as string]: background, ["--hrh-fg" as string]: foreground, ["--hrh-top" as string]: stickyTop }}
       aria-label={greeting + " " + name}
     >
       {fontHref && <link rel="stylesheet" href={fontHref} />}
