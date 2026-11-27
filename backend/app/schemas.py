@@ -12,6 +12,10 @@ class ProjectInput(BaseModel):
     featured: bool = False
     sort_order: int = 0
 
+class FeaturedProjectsInput(BaseModel):
+    project_ids: list[int] = Field(default_factory=list, max_length=6)
+
+
 class TeamInput(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     role: str = ""

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, Integer, LargeBinary, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
@@ -33,6 +33,20 @@ class Project(Base):
     thumbnail_url: Mapped[str] = mapped_column(String(1000), default="")
     featured: Mapped[bool] = mapped_column(Boolean, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class FeaturedProject(Base):
+    __tablename__ = "featured_projects"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), unique=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+class FeaturedProjectConfig(Base):
+    __tablename__ = "featured_project_config"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    configured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
 
 class TeamMember(Base):
     __tablename__ = "team_members"
