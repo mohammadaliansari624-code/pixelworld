@@ -76,8 +76,6 @@ export function PortfolioHero({ projects, bio, finale }: { projects: PortfolioPr
     greeting="A few good"
     name="cuts."
     nameColor="#176BFF"
-    portrait={items[0].helix.src}
-    portraitAlt={items[0].helix.title}
     projects={[]}
     ribbonProjects={ribbon}
     count={`( ${projects.length} project${projects.length === 1 ? '' : 's'} )`}
