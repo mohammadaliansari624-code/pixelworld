@@ -988,3 +988,142 @@ body,
   #contact ul { font-size: 13px; }
   footer { font-size: 11px; line-height: 1.5; }
 }
+
+
+/* Pixel Wrld refinements: readable type, compact archive, correctly scaled folder. */
+.pw-project-rail .pw-glass-folder-slot {
+  display: flex;
+  width: 220px;
+  min-height: 238px;
+  flex: 0 0 220px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.pw-project-rail .pw-glass-folder-slot .gf-root {
+  flex: none;
+  max-width: 100%;
+}
+
+/* Keep the Glass Folder's internal 340x272 geometry intact.
+   Scale the complete component instead of shrinking only its artwork/stage. */
+@media (max-width: 639px) {
+  .pw-project-rail:not(.pw-project-rail--expanded) > .pw-glass-folder-slot {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    flex: initial;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+  }
+  .pw-project-rail .pw-glass-folder-slot .gf-root {
+    width: 220px !important;
+    transform: scale(.70);
+    transform-origin: center;
+    margin: -32px 0;
+  }
+  .pw-project-rail .pw-glass-folder-slot .gf-stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 340px;
+    height: 272px;
+    transform-origin: 0 0;
+    /* Let the component's own inline scale position its back/front layers. */
+  }
+}
+
+/* The archive should be a compact modal, not a near full-screen desktop wall. */
+.pw-gallery-panel {
+  width: min(100%, 1040px);
+  max-height: min(84vh, 820px);
+  max-height: min(84svh, 820px);
+}
+.pw-gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 240px));
+  justify-content: center;
+  gap: 16px;
+}
+.pw-gallery-grid > .pw-project-card {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .pw-gallery-overlay { padding: 10px; }
+  .pw-gallery-panel {
+    width: min(100%, 520px);
+    max-height: 90vh;
+    max-height: 90svh;
+    padding: 12px;
+  }
+  .pw-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: 9px;
+  }
+}
+
+/* Relax overly tight tracking and improve line spacing across headings and labels. */
+.section-heading,
+.about-heading,
+.service-motion-heading h2,
+.pw-cinematic-copy h3,
+.pw-helix-heading h3 {
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+}
+.hero-headline {
+  letter-spacing: 0;
+}
+.section-kicker,
+.pw-project-card-copy > p:first-child,
+.pw-gallery-header > div > p:first-child {
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+}
+.service-pill {
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+.pw-project-card-copy > h4 {
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.pw-project-card-copy > p:last-child {
+  letter-spacing: 0;
+  line-height: 1.55;
+}
+.pw-gallery-header h2 {
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+@media (max-width: 719px) {
+  .section-heading,
+  .about-heading,
+  .service-motion-heading h2,
+  .pw-cinematic-copy h3,
+  .pw-helix-heading h3 {
+    letter-spacing: -0.01em;
+    line-height: 1.04;
+  }
+  .section-kicker,
+  .pw-project-card-copy > p:first-child {
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+  }
+  .pw-project-card-copy > h4 {
+    font-size: 14px;
+    letter-spacing: 0;
+    line-height: 1.4;
+  }
+  .pw-project-card-copy > p:last-child {
+    font-size: 11px;
+    line-height: 1.55;
+  }
+  .service-pill {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+}

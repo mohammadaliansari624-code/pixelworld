@@ -51,7 +51,7 @@ function useSafeImages(sources: string[], mobile: boolean) {
   return resolved;
 }
 
-export function PortfolioHero({ projects, bio, onSelect }: { projects: PortfolioProject[]; bio: string; onSelect: (id: number) => void }) {
+export function PortfolioHero({ projects, bio }: { projects: PortfolioProject[]; bio: string; onSelect: (id: number) => void }) {
   const mobile = useMobileViewport();
   const resolved = useSafeImages(projects.map(project => project.thumbnail_url), mobile);
   const items = useMemo(() => projects.map(project => {
@@ -60,12 +60,12 @@ export function PortfolioHero({ projects, bio, onSelect }: { projects: Portfolio
     return { id: project.id, helix: { src, title: project.title } as HelixProject };
   }), [projects, resolved]);
 
-  // The category rails immediately below this component are the mobile portfolio.
-  // Skipping the ribbon entirely avoids mounting its scroll loop, pin range and 3D image layers.
+  // Mobile skips the ribbon. On desktop, the ribbon is a cinematic transition only;
+  // category-specific project rails below are the actual portfolio, so no mixed grid lands here.
   if (mobile || !items.length) return null;
   const grid = items.slice(0, 6).map(item => item.helix);
   // The ribbon needs enough cards to read as a ribbon; a short catalogue is cycled to fill it.
-  const ribbonLength = mobile ? 4 : Math.min(12, Math.max(8, items.length));
+  const ribbonLength = Math.min(12, Math.max(8, items.length));
   const ribbon = Array.from({ length: ribbonLength }, (_, i) => items[i % items.length].helix);
 
   return <HelixRibbonHero
@@ -75,9 +75,9 @@ export function PortfolioHero({ projects, bio, onSelect }: { projects: Portfolio
     greeting="A few good"
     name="cuts."
     nameColor="#176BFF"
-    portrait={grid[0].src}
+    portrait={items[0].helix.src}
     portraitAlt={items[0].helix.title}
-    projects={grid}
+    projects={[]}
     ribbonProjects={ribbon}
     count={`( ${projects.length} project${projects.length === 1 ? '' : 's'} )`}
     bio={bio}
@@ -85,6 +85,5 @@ export function PortfolioHero({ projects, bio, onSelect }: { projects: Portfolio
     background="#090a0c"
     foreground="#eeeae2"
     showNav={false}
-    onSelect={index => onSelect(items[index].id)}
   />;
 }
