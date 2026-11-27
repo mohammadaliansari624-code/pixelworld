@@ -310,8 +310,9 @@ export default function HelixRibbonHero({
       const base = 0.925
       const lead1 = l1.querySelector("[data-lead]") as HTMLElement | null
       const o2 = lead1 ? lead1.offsetWidth / 100 : 0.5
-      const pw = cap * 0.8
-      const gap = 0.06
+      // No portrait: the slot collapses so the headline stays centred without a gap after the text
+      const pw = portrait ? cap * 0.8 : 0
+      const gap = portrait ? 0.06 : 0
       const lg = cap * 0.1
       const bw = Math.max(w1 / 100 + gap + pw, o2 + w2 / 100)
       const bh = cap * 2 + lg
@@ -556,7 +557,7 @@ export default function HelixRibbonHero({
       window.removeEventListener("keydown", onUser)
       window.removeEventListener("scroll", onScroll)
     }
-  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav, runSpan, !!finale])
+  }, [ready, reduced, mobile, autoPlay, greeting, name, ribbon.length, tiles.length, showNav, runSpan, !!finale, !!portrait])
 
   const letters = (text: string, delay0: number) =>
     Array.from(text).map((c, i) => (
@@ -586,7 +587,7 @@ export default function HelixRibbonHero({
               </span>
               {letters(restWords.trimStart(), 0.08 + (firstWord.length + 1) * 0.045)}
             </h2>
-            <div ref={portRef} className="hrh-port">
+            <div ref={portRef} className="hrh-port" style={portrait ? undefined : { display: "none" }}>
               {portrait && <img src={portrait} alt={portraitAlt} width={480} height={600} loading={mobile ? "lazy" : undefined} decoding={mobile ? "async" : undefined} onError={mobile ? event => retryThenPlaceholder(event, portraitAlt || name) : undefined} style={{ maxWidth: "none" }} draggable={false} />}
             </div>
             <div ref={l2Ref} className="hrh-line" aria-hidden="true" style={nameColor ? { color: nameColor } : undefined}>
