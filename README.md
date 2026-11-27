@@ -54,12 +54,22 @@ The public booking form validates the details and opens WhatsApp with a prefille
 
 ## Admin features
 - Dashboard overview
+- Curate up to six homepage Featured Projects, choose their display order, and save the selection
 - Add/edit/delete portfolio projects with video URL, thumbnail URL, category and description
 - Add/edit/delete team members with photo URL, role, bio and social link
 - Edit studio bio, email, phone, location, WhatsApp number and booking message
 - Protected API routes using JWT bearer authentication
 - Google Sign-In with owner-controlled approval, grant and revoke controls
 - Super admin: `guptasonu312006@gmail.com` (configurable via `SUPER_ADMIN_EMAIL`)
+
+
+## Homepage Featured Projects
+The homepage includes a curated **Best of Pixel Wrld** section immediately after the opening portfolio animation. In Admin, open **Featured Projects** to select up to six existing projects and move them up/down to set their display order. The selection is stored in PostgreSQL and is independent of the legacy per-project `featured` flag. Until the owner saves a custom selection, the homepage falls back to the existing featured flags (or the first six projects if none are flagged).
+
+After deploying this update, apply the new database migration from the backend directory:
+```bash
+alembic upgrade head
+```
 
 ## Production checklist
 - Set a unique cryptographically random `JWT_SECRET` in backend `.env`.

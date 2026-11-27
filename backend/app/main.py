@@ -235,6 +235,32 @@ def auth_me(admin: models.Admin = Depends(current_admin)):
 # PUBLIC WEBSITE DATA
 # --------------------------------------------------
 
+def _featured_project_ids(db: Session) -> list[int]:
+    config = db.get(models.FeaturedProjectConfig, 1)
+    selected = (
+        db.query(models.FeaturedProject)
+        .order_by(models.FeaturedProject.sort_order, models.FeaturedProject.id)
+        .all()
+    )
+    if config and config.configured:
+        return [row.project_id for row in selected]
+    # Backward-compatible default: use the existing "featured" project flag
+    # until the owner explicitly curates the new six-project homepage section.
+    legacy_ids = [
+        row.id for row in db.query(models.Project)
+        .filter(models.Project.featured.is_(True))
+        .order_by(models.Project.sort_order, models.Project.id.desc())
+        .limit(6).all()
+    ]
+    if legacy_ids:
+        return legacy_ids
+    return [
+        row.id for row in db.query(models.Project)
+        .order_by(models.Project.sort_order, models.Project.id.desc())
+        .limit(6).all()
+    ]
+
+
 @app.get("/api/public")
 def public_data(db: Session = Depends(get_db)):
     projects = (
@@ -270,6 +296,7 @@ def public_data(db: Session = Depends(get_db)):
             schemas.ProjectOut.model_validate(x)
             for x in projects
         ],
+        "featured_project_ids": _featured_project_ids(db),
         "team": [
             schemas.TeamOut.model_validate(x)
             for x in team
@@ -548,6 +575,50 @@ def summary(
 
 
 # --------------------------------------------------
+# ADMIN HOMEPAGE FEATURED PROJECTS
+# --------------------------------------------------
+
+@app.get("/api/admin/featured-projects")
+def admin_featured_projects(db: Session = Depends(get_db), _: models.Admin = Depends(current_admin)):
+    config = db.get(models.FeaturedProjectConfig, 1)
+    return {"project_ids": _featured_project_ids(db), "configured": bool(config and config.configured)}
+
+
+@app.put("/api/admin/featured-projects")
+def update_featured_projects(
+    data: schemas.FeaturedProjectsInput,
+    db: Session = Depends(get_db),
+    _: models.Admin = Depends(current_admin),
+):
+    project_ids = data.project_ids
+    if len(project_ids) > 6:
+        raise HTTPException(status_code=422, detail="You can select a maximum of 6 featured projects")
+    if len(project_ids) != len(set(project_ids)):
+        raise HTTPException(status_code=422, detail="A project can only be selected once")
+    if project_ids:
+        found = {
+            row.id for row in db.query(models.Project.id)
+            .filter(models.Project.id.in_(project_ids)).all()
+        }
+        missing = [project_id for project_id in project_ids if project_id not in found]
+        if missing:
+            raise HTTPException(status_code=404, detail=f"Project(s) not found: {', '.join(map(str, missing))}")
+    db.query(models.FeaturedProject).delete(synchronize_session=False)
+    config = db.get(models.FeaturedProjectConfig, 1)
+    if config is None:
+        config = models.FeaturedProjectConfig(id=1, configured=True)
+        db.add(config)
+    else:
+        config.configured = True
+    db.add_all([
+        models.FeaturedProject(project_id=project_id, sort_order=index)
+        for index, project_id in enumerate(project_ids)
+    ])
+    db.commit()
+    return {"project_ids": project_ids, "configured": True, "count": len(project_ids)}
+
+
+# --------------------------------------------------
 # ADMIN PROJECTS
 # --------------------------------------------------
 
@@ -634,6 +705,8 @@ def delete_project(
         )
 
     previous_thumbnail = row.thumbnail_url
+    # Remove the project from the curated homepage selection before deleting it.
+    db.query(models.FeaturedProject).filter(models.FeaturedProject.project_id == row.id).delete(synchronize_session=False)
     db.delete(row)
     db.commit()
     _cleanup_uploaded_image_if_unused(db, previous_thumbnail)
