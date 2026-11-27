@@ -193,12 +193,6 @@ export function HelixVideoShowcase({ projects, onSelect }: Props) {
                       allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                       allowFullScreen
                     />
-                  ) : project.thumbnail_url ? (
-                    <img
-                      src={project.thumbnail_url}
-                      alt={project.title}
-                      loading="lazy"
-                    />
                   ) : (
                     <div className="pw-helix-no-poster">
                       VIDEO
